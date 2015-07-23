@@ -1,0 +1,273 @@
+--- ./original/make-4.1/job.c	2015-07-23 14:24:46.768653978 +0200
++++ my/job.c	2015-07-23 14:51:08.180495776 +0200
+@@ -24,6 +24,7 @@
+ #include "commands.h"
+ #include "variable.h"
+ #include "debug.h"
++#include "xml.h"
+ 
+ #include <string.h>
+ 
+@@ -1724,7 +1725,7 @@
+       waiting_jobs = c;
+       return 0;
+     }
+-
++  xml_job(c);
+   /* Start the first command; reap_children will run later command lines.  */
+   start_job_command (c);
+ 
+--- ./original/make-4.1/xml.h	1970-01-01 01:00:00.000000000 +0100
++++ my/xml.h	2015-07-23 14:51:29.620602092 +0200
+@@ -0,0 +1,170 @@
++#ifndef LOG_H
++#define LOG_H
++#include "dep.h"
++extern FILE* xml_file;
++
++static void escape_xml_str(FILE* out,const char* s)
++	{
++	unsigned int i=0;
++	while(s[i]!=0)
++		{
++		switch(s[i])
++			{
++			case '<': fputs("&lt;",out); break;
++			case '>': fputs("&gt;",out); break;
++			case '&': fputs("&amp;",out); break;
++			case '\'': fputs("&apos;",out); break;
++			case '\"': fputs("&quot;",out); break;
++			default: fputc(s[i],out);break;
++			}
++		++i;
++		}
++	}
++
++static void _dump_string_array(const char* title,char** s)
++	{
++	int i=0;
++	if(s==NULL) return;
++	while(s[i]!=NULL)
++		{
++		fprintf(stderr,"  [LOG] %s[%d]=%s\n", title,i,s[i]);
++		++i;
++		}
++	}
++
++static void __dump_deps(struct dep* dep,int order)
++	{
++	if(dep == NULL ) return ;
++	fprintf(stderr,"[LOG] dep[%d]\n",order);
++	if(dep->name!=NULL) fprintf(stderr,"  [LOG] dep.name=%s\n", dep->name);
++	if(dep->stem!=NULL) fprintf(stderr,"  [LOG] dep.stem=%s\n", dep->stem);
++	if(dep->file!=NULL) fprintf(stderr,"  [LOG] dep.file.name=%s\n", dep->file->name);
++	if( dep->next !=  NULL) __dump_deps(dep->next,order+1);
++	}
++
++static void __dump_file(struct file* f)
++	{
++	if(f->name!=NULL) fprintf(stderr," [LOG] file.name=%s\n", f->name);
++	if(f->hname!=NULL) fprintf(stderr," [LOG] file.hname=%s\n", f->hname);
++	if(f->vpath!=NULL) fprintf(stderr," [LOG] file.vpath=%s\n", f->vpath);
++	__dump_deps(f->deps,0);
++	}
++
++
++static void xml_job(struct child* child)
++	{
++	int i=0;
++	struct file* f = child->file;
++	if( f == NULL)
++		{
++		fprintf(stderr,"[LOG] child->file is NULL !");
++		}
++	else
++		{
++		__dump_file(f);
++		}
++	if( child->sh_batch_file!=NULL)  fprintf(stderr," [LOG] child.sh_batch_file=%s\n", child->sh_batch_file);
++	if( child->command_ptr!=NULL)  fprintf(stderr," [LOG] child.command_ptr=%s\n", child->command_ptr);
++	if( child->next!=NULL)  fprintf(stderr," [LOG] child.next.file.name=%s\n", child->next->file->name);
++	
++	for( i=0;i< child->file->cmds->ncommand_lines;++i)
++		{
++		fprintf(stderr,"  [LOG] child.command_lines[%d]=%s\n",i,child->command_lines[i]);
++		}
++	//_dump_string_array("child.environment",child->environment);
++	
++	if( xml_file != NULL)
++		{
++		struct dep* dep = f->deps;
++		fputs("<target",xml_file);
++		if(f->name!=NULL)
++			{
++			fputs(" name=\"",xml_file);
++			escape_xml_str(xml_file,f->name);
++			fputc('"',xml_file);
++			}
++		if(f->parent!=NULL)
++			{
++			fputs(" parent=\"",xml_file);
++			escape_xml_str(xml_file,f->parent->name);
++			fputc('"',xml_file);
++			}
++		if(f->hname!=NULL)
++			{
++			fputs(" hname=\"",xml_file);
++			escape_xml_str(xml_file,f->hname);
++			fputc('"',xml_file);
++			}
++		if(f->vpath!=NULL)
++			{
++			fputs(" vpath=\"",xml_file);
++			escape_xml_str(xml_file,f->vpath);
++			fputc('"',xml_file);
++			}
++		fputs(" update-status=\"",xml_file);
++		switch(f->update_status)
++			{
++			case us_success : fputs("updated\"",xml_file); break;
++			case us_none : fputs("none\"",xml_file); break;
++			case us_question : fputs("question\"",xml_file); break;
++			case us_failed : fputs("failed\"",xml_file); break;
++			}
++		fputs(" state=\"",xml_file);
++		switch(f->update_status)
++			{
++			case cs_not_started : fputs("not_started\"",xml_file); break;
++			case cs_deps_running : fputs("deps_running\"",xml_file); break;
++			case cs_running : fputs("running\"",xml_file); break;
++			case cs_finished : fputs("finished\"",xml_file); break;
++			}
++		
++		fprintf(xml_file," builtin=\"%d\"",f->builtin);
++		fprintf(xml_file," precious=\"%d\"",f->precious);
++		fprintf(xml_file," loaded=\"%d\"",f->loaded);
++		fprintf(xml_file," updating=\"%d\"",f->updating);
++		fprintf(xml_file," updated=\"%d\"",f->updated);
++		fprintf(xml_file," is_target=\"%d\"",f->is_target);
++		fprintf(xml_file," cmd_target=\"%d\"",f->cmd_target);
++		fprintf(xml_file," phony=\"%d\"",f->phony);
++		
++		fputs(">\n",xml_file);
++		/*
++		fputs("  <environment>\n",xml_file);
++		if(child->environment!=NULL)
++			{
++			i=0;
++			while(child->environment[i]!=0)
++				{
++				escape_xml_str(xml_file,child->environment[i]);
++				++i;
++				}
++			}
++		fputs("  </environment>\n",xml_file);*/
++		
++		fputs("  <prerequisites>\n",xml_file);
++		while( dep != NULL )
++			{
++			fputs("    <prerequisite name=\"",xml_file);
++			escape_xml_str(xml_file,dep->file->name);
++			fputs("\"/>\n",xml_file);
++			dep = dep->next;
++			}
++		
++		
++		fputs("  </prerequisites>\n",xml_file);
++		
++		fputs("  <statements>\n",xml_file);
++		for( i=0;i< child->file->cmds->ncommand_lines;++i)
++			{
++			fputs("    <statement>",xml_file);
++			escape_xml_str(xml_file,child->command_lines[i]);
++			fputs("</statement>\n",xml_file);
++			}
++		fputs("  </statements>\n",xml_file);
++		fputs("</target>\n",xml_file);
++		}
++	
++	}
++	
++#endif
++
+--- ./original/make-4.1/main.c	2015-07-23 14:24:46.768653978 +0200
++++ my/main.c	2015-07-23 14:48:56.527842947 +0200
+@@ -276,6 +276,11 @@
+ /* List of strings to be eval'd.  */
+ static struct stringlist *eval_strings = 0;
+ 
++/* xml output.  */
++static struct stringlist *xml_output = 0;
++FILE* xml_file = NULL;
++
++
+ /* If nonzero, we should just print usage and exit.  */
+ 
+ static int print_usage_flag = 0;
+@@ -383,6 +388,8 @@
+                               Consider FILE to be infinitely new.\n"),
+     N_("\
+   --warn-undefined-variables  Warn when an undefined variable is referenced.\n"),
++    N_("\
++  -X, --xml                   Xml output.\n"),
+     NULL
+   };
+ 
+@@ -435,7 +442,8 @@
+     { 'o', filename, &old_files, 0, 0, 0, 0, 0, "old-file" },
+     { 'O', string, &output_sync_option, 1, 1, 0, "target", 0, "output-sync" },
+     { 'W', filename, &new_files, 0, 0, 0, 0, 0, "what-if" },
+-
++	{ 'X', filename, &xml_output, 0, 0, 0, 0, 0, "xml" },
++	
+     /* These are long-style options.  */
+     { CHAR_MAX+1, strlist, &db_flags, 1, 1, 0, "basic", 0, "debug" },
+     { CHAR_MAX+2, string, &jobserver_fds, 1, 1, 0, 0, 0, "jobserver-fds" },
+@@ -1452,6 +1460,33 @@
+   if (ISDB (DB_BASIC))
+     print_version ();
+ 
++ if (xml_output != 0)
++    {
++    silent_flag = 1;
++    just_print_flag = 1;
++    print_data_base_flag = 0;
++    question_flag = 0;
++    job_slots = 1;
++    always_make_flag = 1;
++    always_make_set = 1;
++     unsigned int i;
++     if(strcmp(xml_output->list[0],"-")==0)
++     	{
++     	xml_file = stdout;
++     	}
++     else
++     	{
++	    xml_file = fopen(xml_output->list[0],"w");
++	    if( xml_file == NULL)
++		 	{
++		 	fprintf(stderr,"Cannot open %s %s\n",xml_output->list[0],strerror(errno));
++		 	die (MAKE_FAILURE);
++		 	}
++	    }
++	 fputs("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<make>\n",xml_file);
++     }
++
++
+ #ifndef VMS
+   /* Set the "MAKE_COMMAND" variable to the name we were invoked with.
+      (If it is a relative pathname with a slash, prepend our directory name
+@@ -2540,6 +2575,13 @@
+       O (error, NILF,
+          _("warning:  Clock skew detected.  Your build may be incomplete."));
+ 
++    if(xml_file != NULL)
++    	{
++    	fputs("</make>\n",xml_file);
++    	fflush(xml_file);
++    	fclose(xml_file);
++    	}
++
+     /* Exit.  */
+     die (makefile_status);
+   }

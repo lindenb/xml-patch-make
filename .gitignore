@@ -30,3 +30,9 @@
 
 # Debug files
 *.dSYM/
+
+#
+*~
+jeter*
+*.tmp
+make-4.1
