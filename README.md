@@ -100,6 +100,15 @@ content of output.xml
 </make>
 ```
 
+## XSL stylesheet
+
+the folder **stylesheets** contains XSLT stylesheets to convert the XML:
+
+*  graph2dot to Graphviz/Dot
+*  graph2html to HTML
+*  graph2make to Makefile
+*  graph2gex  to GEXF
+
 
 ## Contribute
 
