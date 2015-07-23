@@ -1,150 +1,43 @@
---- ./original/make-4.1/job.c	2015-07-23 14:24:46.768653978 +0200
-+++ my/job.c	2015-07-23 14:51:08.180495776 +0200
-@@ -24,6 +24,7 @@
- #include "commands.h"
- #include "variable.h"
- #include "debug.h"
+--- make-4.1/original/job.c	2015-07-23 19:00:55.820703381 +0200
++++ make-4.1/make-4.1/job.c	2015-07-23 20:04:01.467475387 +0200
+@@ -17,15 +17,10 @@
+ #include "makeint.h"
+ 
+ #include <assert.h>
++#include <string.h>
 +#include "xml.h"
  
- #include <string.h>
+-#include "job.h"
+-#include "debug.h"
+-#include "filedef.h"
+-#include "commands.h"
+-#include "variable.h"
+-#include "debug.h"
  
-@@ -1724,7 +1725,7 @@
+-#include <string.h>
+ 
+ /* Default shell to use.  */
+ #ifdef WINDOWS32
+@@ -1724,7 +1719,7 @@
        waiting_jobs = c;
        return 0;
      }
 -
-+  xml_job(c);
++  xml_visit(c);
    /* Start the first command; reap_children will run later command lines.  */
    start_job_command (c);
  
---- ./original/make-4.1/xml.h	1970-01-01 01:00:00.000000000 +0100
-+++ my/xml.h	2015-07-23 14:51:29.620602092 +0200
-@@ -0,0 +1,121 @@
-+#ifndef LOG_H
-+#define LOG_H
-+#include "dep.h"
-+extern FILE* xml_file;
+--- make-4.1/original/main.c	2015-07-23 19:00:55.820703381 +0200
++++ make-4.1/make-4.1/main.c	2015-07-23 20:03:00.723174179 +0200
+@@ -24,6 +24,7 @@
+ #include "debug.h"
+ #include "getopt.h"
+ 
 +
-+static void escape_xml_str(FILE* out,const char* s)
-+	{
-+	unsigned int i=0;
-+	while(s[i]!=0)
-+		{
-+		switch(s[i])
-+			{
-+			case '<': fputs("&lt;",out); break;
-+			case '>': fputs("&gt;",out); break;
-+			case '&': fputs("&amp;",out); break;
-+			case '\'': fputs("&apos;",out); break;
-+			case '\"': fputs("&quot;",out); break;
-+			default: fputc(s[i],out);break;
-+			}
-+		++i;
-+		}
-+	}
-+
-+static void xml_job(struct child* child)
-+	{
-+	int i=0;
-+	struct file* f = child->file;
-+	if( xml_file != NULL)
-+		{
-+		struct dep* dep = f->deps;
-+		fputs("<target",xml_file);
-+		if(f->name!=NULL)
-+			{
-+			fputs(" name=\"",xml_file);
-+			escape_xml_str(xml_file,f->name);
-+			fputc('"',xml_file);
-+			}
-+		if(f->parent!=NULL)
-+			{
-+			fputs(" parent=\"",xml_file);
-+			escape_xml_str(xml_file,f->parent->name);
-+			fputc('"',xml_file);
-+			}
-+		if(f->hname!=NULL)
-+			{
-+			fputs(" hname=\"",xml_file);
-+			escape_xml_str(xml_file,f->hname);
-+			fputc('"',xml_file);
-+			}
-+		if(f->vpath!=NULL)
-+			{
-+			fputs(" vpath=\"",xml_file);
-+			escape_xml_str(xml_file,f->vpath);
-+			fputc('"',xml_file);
-+			}
-+		fputs(" update-status=\"",xml_file);
-+		switch(f->update_status)
-+			{
-+			case us_success : fputs("updated\"",xml_file); break;
-+			case us_none : fputs("none\"",xml_file); break;
-+			case us_question : fputs("question\"",xml_file); break;
-+			case us_failed : fputs("failed\"",xml_file); break;
-+			}
-+		fputs(" state=\"",xml_file);
-+		switch(f->update_status)
-+			{
-+			case cs_not_started : fputs("not_started\"",xml_file); break;
-+			case cs_deps_running : fputs("deps_running\"",xml_file); break;
-+			case cs_running : fputs("running\"",xml_file); break;
-+			case cs_finished : fputs("finished\"",xml_file); break;
-+			}
-+		
-+		fprintf(xml_file," builtin=\"%d\"",f->builtin);
-+		fprintf(xml_file," precious=\"%d\"",f->precious);
-+		fprintf(xml_file," loaded=\"%d\"",f->loaded);
-+		fprintf(xml_file," updating=\"%d\"",f->updating);
-+		fprintf(xml_file," updated=\"%d\"",f->updated);
-+		fprintf(xml_file," is_target=\"%d\"",f->is_target);
-+		fprintf(xml_file," cmd_target=\"%d\"",f->cmd_target);
-+		fprintf(xml_file," phony=\"%d\"",f->phony);
-+		
-+		fputs(">\n",xml_file);
-+		/*
-+		fputs("  <environment>\n",xml_file);
-+		if(child->environment!=NULL)
-+			{
-+			i=0;
-+			while(child->environment[i]!=0)
-+				{
-+				escape_xml_str(xml_file,child->environment[i]);
-+				++i;
-+				}
-+			}
-+		fputs("  </environment>\n",xml_file);*/
-+		
-+		fputs("  <prerequisites>\n",xml_file);
-+		while( dep != NULL )
-+			{
-+			fputs("    <prerequisite name=\"",xml_file);
-+			escape_xml_str(xml_file,dep->file->name);
-+			fputs("\"/>\n",xml_file);
-+			dep = dep->next;
-+			}
-+		
-+		
-+		fputs("  </prerequisites>\n",xml_file);
-+		
-+		fputs("  <statements>\n",xml_file);
-+		for( i=0;i< child->file->cmds->ncommand_lines;++i)
-+			{
-+			fputs("    <statement>",xml_file);
-+			escape_xml_str(xml_file,child->command_lines[i]);
-+			fputs("</statement>\n",xml_file);
-+			}
-+		fputs("  </statements>\n",xml_file);
-+		fputs("</target>\n",xml_file);
-+		}
-+	
-+	}
-+	
-+#endif
-+
---- ./original/make-4.1/main.c	2015-07-23 14:24:46.768653978 +0200
-+++ my/main.c	2015-07-23 14:48:56.527842947 +0200
-@@ -276,6 +276,11 @@
+ #include <assert.h>
+ #ifdef _AMIGA
+ # include <dos/dos.h>
+@@ -276,6 +277,11 @@
  /* List of strings to be eval'd.  */
  static struct stringlist *eval_strings = 0;
  
@@ -156,7 +49,7 @@
  /* If nonzero, we should just print usage and exit.  */
  
  static int print_usage_flag = 0;
-@@ -383,6 +388,8 @@
+@@ -383,6 +389,8 @@
                                Consider FILE to be infinitely new.\n"),
      N_("\
    --warn-undefined-variables  Warn when an undefined variable is referenced.\n"),
@@ -165,7 +58,7 @@
      NULL
    };
  
-@@ -435,7 +442,8 @@
+@@ -435,7 +443,8 @@
      { 'o', filename, &old_files, 0, 0, 0, 0, 0, "old-file" },
      { 'O', string, &output_sync_option, 1, 1, 0, "target", 0, "output-sync" },
      { 'W', filename, &new_files, 0, 0, 0, 0, 0, "what-if" },
@@ -175,7 +68,7 @@
      /* These are long-style options.  */
      { CHAR_MAX+1, strlist, &db_flags, 1, 1, 0, "basic", 0, "debug" },
      { CHAR_MAX+2, string, &jobserver_fds, 1, 1, 0, 0, 0, "jobserver-fds" },
-@@ -1452,6 +1460,33 @@
+@@ -1452,6 +1461,32 @@
    if (ISDB (DB_BASIC))
      print_version ();
  
@@ -202,7 +95,6 @@
 +		 	die (MAKE_FAILURE);
 +		 	}
 +	    }
-+	 fputs("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<make>\n",xml_file);
 +     }
 +
 +
@@ -215,11 +107,252 @@
  
 +    if(xml_file != NULL)
 +    	{
-+    	fputs("</make>\n",xml_file);
-+    	fflush(xml_file);
++    	extern void xml_finalize(FILE*);
++    	xml_finalize(xml_file);
 +    	fclose(xml_file);
 +    	}
 +
      /* Exit.  */
      die (makefile_status);
    }
+--- make-4.1/original/Makefile.am	2015-07-23 19:00:55.816703362 +0200
++++ make-4.1/make-4.1/Makefile.am	2015-07-23 19:07:43.666725792 +0200
+@@ -43,6 +43,7 @@
+ 		function.c getopt.c getopt1.c guile.c implicit.c job.c load.c \
+ 		loadapi.c main.c misc.c output.c read.c remake.c rule.c \
+ 		signame.c strcache.c variable.c version.c vpath.c hash.c \
++		xml.c \
+ 		$(remote)
+ 
+ EXTRA_make_SOURCES = vmsjobs.c remote-stub.c remote-cstms.c
+--- make-4.1/original/xml.c	1970-01-01 01:00:00.000000000 +0100
++++ make-4.1/make-4.1/xml.c	2015-07-23 20:15:28.698883193 +0200
+@@ -0,0 +1,211 @@
++
++#include "xml.h"
++
++#define EXIT_WITH_ERROR do { fprintf(stderr,"Exiting %s %d\n",__FILE__,__LINE__);exit(-1);} while(0)
++
++typedef struct Node
++	{
++	int id;
++	const char* name;
++	int phony;
++	int precious;
++	size_t n_prerequisites;
++	struct Node** prerequisites;
++	size_t n_statements;
++	char** statements;
++	}Node,*NodePtr;
++
++
++
++static NodePtr NodeNew()
++	{
++	NodePtr p=(NodePtr)calloc(1,sizeof(Node));
++	if(p==NULL) EXIT_WITH_ERROR;
++	return p;
++	}
++
++static NodePtr the_root = NULL;
++
++static void NodeFree(NodePtr p)
++	{
++	size_t i;
++	if(p==NULL) return;
++	if(p == the_root)
++		{
++		for(i=0;i< p->n_prerequisites;++i)
++			{
++			NodeFree(p->prerequisites[i]);
++			}
++		}
++	free(p->prerequisites);
++	for(i=0;i< p->n_statements;++i)
++			{
++			free(p->statements[i]);
++			}
++	free(p->statements);
++	free(p);
++	}
++
++static NodePtr RootFindNodeByName(const char* name)
++	{
++	NodePtr childptr=NULL;
++	if( the_root == NULL) the_root = NodeNew();
++	size_t i;
++	for(i=0;i< the_root->n_prerequisites;++i)
++		{
++		if(strcmp(the_root->prerequisites[i]->name,name)==0)
++			{
++			return the_root->prerequisites[i];
++			}
++		}
++	//not found, add it
++	childptr = NodeNew();
++	childptr->id = (int)the_root->n_prerequisites+1;
++	childptr->name = strdup(name);
++	if( childptr->name ==NULL ) EXIT_WITH_ERROR;
++	
++	the_root->prerequisites =  (NodePtr*)realloc(
++		the_root->prerequisites,
++		sizeof(NodePtr)*(the_root->n_prerequisites+1)
++		);
++	if( the_root->prerequisites == NULL) EXIT_WITH_ERROR;
++	the_root->prerequisites[the_root->n_prerequisites]=childptr;
++	the_root->n_prerequisites++;
++	return childptr;
++	}
++
++NodePtr FindNodeByName(NodePtr node,const char* name)
++	{
++	size_t i=0;
++	NodePtr childptr=NULL;
++	for(i=0;i< node->n_prerequisites;++i)
++		{
++		if(strcmp(node->prerequisites[i]->name,name)==0)
++			{
++			return node->prerequisites[i];
++			}
++		}
++	//not found, add it
++	childptr = RootFindNodeByName(name);
++	
++	node->prerequisites =  (NodePtr*)realloc(
++		node->prerequisites,
++		sizeof(NodePtr)*(node->n_prerequisites+1)
++		);
++	if( node->prerequisites == NULL) EXIT_WITH_ERROR;
++	node->prerequisites[node->n_prerequisites]=childptr;
++	node->n_prerequisites++;
++	return childptr;
++	}
++
++
++static void escape_xml_str(FILE* out,const char* s)
++	{
++	unsigned int i=0;
++	while(s[i]!=0)
++		{
++		switch(s[i])
++			{
++			case '<': fputs("&lt;",out); break;
++			case '>': fputs("&gt;",out); break;
++			case '&': fputs("&amp;",out); break;
++			case '\'': fputs("&apos;",out); break;
++			case '\"': fputs("&quot;",out); break;
++			default: fputc(s[i],out);break;
++			}
++		++i;
++		}
++	}
++
++static void NodePrint(FILE* out,NodePtr node)
++	{
++	size_t i=0;
++	fputs("<target",out);
++	
++		fputs(" name=\"",out);
++		escape_xml_str(out,node->name);
++		fputc('"',out);
++		fputs(" description=\"",out);
++		escape_xml_str(out,node->name);
++		fputc('"',out);
++	fprintf(out," id=\"%d\"",node->id);
++	fprintf(out," precious=\"%d\"",node->precious);
++	fprintf(out," phony=\"%d\"",node->phony);
++	
++	fputs(">\n",xml_file);
++	
++	if(node->n_prerequisites>0)
++		{
++		fputs("  <prerequisites>\n",out);
++		for(i=0; i< node->n_prerequisites;++i)
++			{
++			fputs("    <prerequisite name=\"",out);
++			escape_xml_str(out,node->prerequisites[i]->name);
++			fprintf(out," ref=\"%d\"",node->prerequisites[i]->id);
++			fputs("\"/>\n",out);
++			}
++		fputs("  </prerequisites>\n",out);
++		}
++		
++	
++	
++	if(node->n_statements>0)
++		{
++		fputs("  <statements>\n",out);
++		for( i=0;i< node->n_statements;++i)
++			{
++			fputs("    <statement>",xml_file);
++			escape_xml_str(out,node->statements[i]);
++			fputs("</statement>\n",out);
++			}
++		fputs("  </statements>\n",out);
++		}
++	fputs("</target>\n",out);
++	}
++
++
++void xml_visit(struct child* child)
++	{
++	int i=0;
++	struct file* f = child->file;
++	struct dep* dep = f->deps;
++	NodePtr childptr=NULL;
++	if( xml_file == NULL) return;
++	//find node
++	childptr = RootFindNodeByName(child->file->name);
++	childptr->precious = f->precious;
++	childptr->phony = f->phony;
++	while( dep != NULL )
++		{
++		NodePtr depnode = FindNodeByName(childptr,dep->file->name);
++		depnode->phony = dep->file->phony;
++		dep = dep->next;
++		}
++				
++	for( i=0;i< child->file->cmds->ncommand_lines;++i)
++		{
++		//add statements
++		childptr->statements =  (char**)realloc(
++			childptr->statements,
++			sizeof(char*)*(childptr->n_statements+1)
++			);
++		
++		if( childptr->statements == NULL) EXIT_WITH_ERROR;
++		childptr->statements[childptr->n_statements]= strdup(child->command_lines[i]);
++		if( childptr->statements[childptr->n_statements] == NULL)  exit(EXIT_FAILURE);
++		childptr->n_statements++;
++		}
++	}
++
++void xml_finalize(FILE* out)
++	{
++	size_t i=0;
++	if( out == NULL) return;
++	fputs("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<make>\n",out);
++	for(i=0;i< the_root->n_prerequisites;++i)
++		{
++		NodePrint(out,the_root->prerequisites[i]);
++		}
++	fputs("</make>\n",out);
++    fflush(out);
++	}
+--- make-4.1/original/xml.h	1970-01-01 01:00:00.000000000 +0100
++++ make-4.1/make-4.1/xml.h	2015-07-23 20:03:08.647213470 +0200
+@@ -0,0 +1,14 @@
++#ifndef LOG_H
++#define LOG_H
++#include "makeint.h"
++#include "job.h"
++#include "filedef.h"
++#include "commands.h"
++#include "variable.h"
++#include "debug.h"
++#include "dep.h"
++extern FILE* xml_file;
++
++void xml_visit(struct child*);
++void xml_finalize(FILE*);
++#endif
