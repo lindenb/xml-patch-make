@@ -14,6 +14,7 @@ make-$(make.version)/bin/xml-make$(make.version) : src/xml-make-$(make.version).
 
 test: make-$(make.version)/bin/xml-make$(make.version)
 	$< -C tests -f test01.mk --xml tests/test01.xml all clean
+	$< -C tests -f test02.mk --xml tests/test02.xml all clean
 
 clean :
 	rm -rf make-$(make.version)

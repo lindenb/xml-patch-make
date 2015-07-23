@@ -19,7 +19,7 @@
  
 --- ./original/make-4.1/xml.h	1970-01-01 01:00:00.000000000 +0100
 +++ my/xml.h	2015-07-23 14:51:29.620602092 +0200
-@@ -0,0 +1,170 @@
+@@ -0,0 +1,121 @@
 +#ifndef LOG_H
 +#define LOG_H
 +#include "dep.h"
@@ -43,58 +43,10 @@
 +		}
 +	}
 +
-+static void _dump_string_array(const char* title,char** s)
-+	{
-+	int i=0;
-+	if(s==NULL) return;
-+	while(s[i]!=NULL)
-+		{
-+		fprintf(stderr,"  [LOG] %s[%d]=%s\n", title,i,s[i]);
-+		++i;
-+		}
-+	}
-+
-+static void __dump_deps(struct dep* dep,int order)
-+	{
-+	if(dep == NULL ) return ;
-+	fprintf(stderr,"[LOG] dep[%d]\n",order);
-+	if(dep->name!=NULL) fprintf(stderr,"  [LOG] dep.name=%s\n", dep->name);
-+	if(dep->stem!=NULL) fprintf(stderr,"  [LOG] dep.stem=%s\n", dep->stem);
-+	if(dep->file!=NULL) fprintf(stderr,"  [LOG] dep.file.name=%s\n", dep->file->name);
-+	if( dep->next !=  NULL) __dump_deps(dep->next,order+1);
-+	}
-+
-+static void __dump_file(struct file* f)
-+	{
-+	if(f->name!=NULL) fprintf(stderr," [LOG] file.name=%s\n", f->name);
-+	if(f->hname!=NULL) fprintf(stderr," [LOG] file.hname=%s\n", f->hname);
-+	if(f->vpath!=NULL) fprintf(stderr," [LOG] file.vpath=%s\n", f->vpath);
-+	__dump_deps(f->deps,0);
-+	}
-+
-+
 +static void xml_job(struct child* child)
 +	{
 +	int i=0;
 +	struct file* f = child->file;
-+	if( f == NULL)
-+		{
-+		fprintf(stderr,"[LOG] child->file is NULL !");
-+		}
-+	else
-+		{
-+		__dump_file(f);
-+		}
-+	if( child->sh_batch_file!=NULL)  fprintf(stderr," [LOG] child.sh_batch_file=%s\n", child->sh_batch_file);
-+	if( child->command_ptr!=NULL)  fprintf(stderr," [LOG] child.command_ptr=%s\n", child->command_ptr);
-+	if( child->next!=NULL)  fprintf(stderr," [LOG] child.next.file.name=%s\n", child->next->file->name);
-+	
-+	for( i=0;i< child->file->cmds->ncommand_lines;++i)
-+		{
-+		fprintf(stderr,"  [LOG] child.command_lines[%d]=%s\n",i,child->command_lines[i]);
-+		}
-+	//_dump_string_array("child.environment",child->environment);
-+	
 +	if( xml_file != NULL)
 +		{
 +		struct dep* dep = f->deps;
@@ -239,7 +191,7 @@
 +     unsigned int i;
 +     if(strcmp(xml_output->list[0],"-")==0)
 +     	{
-+     	xml_file = stdout;
++     	fprintf(stderr,"Cannot write xml to stdout\n"); die (MAKE_FAILURE);
 +     	}
 +     else
 +     	{
