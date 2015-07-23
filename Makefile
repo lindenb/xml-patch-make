@@ -1,5 +1,5 @@
 SHELL=/bin/bash
-.PHONY: all clean download-make test
+.PHONY: all clean download-make test _patch
 make.version=4.1
 
 make-$(make.version)/bin/xml-make$(make.version) : src/xml-make-$(make.version).patch
@@ -18,3 +18,8 @@ test: make-$(make.version)/bin/xml-make$(make.version)
 
 clean :
 	rm -rf make-$(make.version)
+
+_patch: 
+	rm -f tmp.patch
+	-$(foreach F,job.c main.c Makefile.am xml.c xml.h, diff  --new-file --text --unified make-$(make.version)/original/$(F) make-$(make.version)/make-$(make.version)/$(F) >> tmp.patch ;)
+	

@@ -271,8 +271,8 @@
 +			{
 +			fputs("    <prerequisite name=\"",out);
 +			escape_xml_str(out,node->prerequisites[i]->name);
-+			fprintf(out," ref=\"%d\"",node->prerequisites[i]->id);
-+			fputs("\"/>\n",out);
++			fprintf(out,"\" ref=\"%d\"",node->prerequisites[i]->id);
++			fputs("/>\n",out);
 +			}
 +		fputs("  </prerequisites>\n",out);
 +		}

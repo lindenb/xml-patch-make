@@ -48,37 +48,55 @@ content of output.xml
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <make>
-  <target name="seq1.rna" parent="database.dna" hname="seq1.rna" update-status="none" state="deps_running" builtin="0" precious="0" loaded="0" updating="0" updated="0" is_target="1" cmd_target="0" phony="0">
-    <prerequisites>
+<target name="seq1.rna" description="seq1.rna" id="1" precious="0" phony="0">
+  <statements>
+    <statement>echo &quot;AUGAAGACUGACUCGAUCGAUCG&quot; &gt; seq1.rna</statement>
+  </statements>
+</target>
+<target name="seq2.rna" description="seq2.rna" id="2" precious="0" phony="0">
+  <statements>
+    <statement>echo &quot;AUGAAGACUGACUCGAUCGAUCG&quot; &gt; seq2.rna</statement>
+  </statements>
+</target>
+<target name="seq3.rna" description="seq3.rna" id="3" precious="0" phony="0">
+  <statements>
+    <statement>echo &quot;AUGAAGACUGACUCGAUCGAUCG&quot; &gt; seq3.rna</statement>
+  </statements>
+</target>
+<target name="database.dna" description="database.dna" id="4" precious="0" phony="0">
+  <prerequisites>
+    <prerequisite name="seq1.rna" ref="1"/>
+    <prerequisite name="seq2.rna" ref="2"/>
+    <prerequisite name="seq3.rna" ref="3"/>
   </prerequisites>
-    <statements>
-      <statement>echo "AUGAAGACUGACUCGAUCGAUCG" &gt; seq1.rna</statement>
-    </statements>
-  </target>
-  <target name="seq2.rna" parent="database.dna" hname="seq2.rna" update-status="none" state="deps_running" builtin="0" precious="0" loaded="0" updating="0" updated="0" is_target="1" cmd_target="0" phony="0">
-    <prerequisites>
+  <statements>
+    <statement>cat seq1.rna seq2.rna seq3.rna &gt; database.dna</statement>
+  </statements>
+</target>
+<target name="log.rna" description="log.rna" id="5" precious="0" phony="0">
+  <statements>
+    <statement>echo &quot;AUGAAGACUGACUCGAUCGAUCG&quot; &gt; log.rna</statement>
+  </statements>
+</target>
+<target name="test.log" description="test.log" id="6" precious="0" phony="0">
+  <prerequisites>
+    <prerequisite name="test" ref="7"/>
   </prerequisites>
-    <statements>
-      <statement>echo "AUGAAGACUGACUCGAUCGAUCG" &gt; seq2.rna</statement>
-    </statements>
-  </target>
-  <target name="seq3.rna" parent="database.dna" hname="seq3.rna" update-status="none" state="deps_running" builtin="0" precious="0" loaded="0" updating="0" updated="0" is_target="1" cmd_target="0" phony="0">
-    <prerequisites>
+  <statements>
+    <statement>touch test.log</statement>
+  </statements>
+</target>
+<target name="test" description="test" id="7" precious="0" phony="1">
+</target>
+<target name="all" description="all" id="8" precious="0" phony="1">
+  <prerequisites>
+    <prerequisite name="database.dna" ref="4"/>
+    <prerequisite name="test.log" ref="6"/>
   </prerequisites>
-    <statements>
-      <statement>echo "AUGAAGACUGACUCGAUCGAUCG" &gt; seq3.rna</statement>
-    </statements>
-  </target>
-  <target name="database.dna" parent="all" hname="database.dna" update-status="none" state="deps_running" builtin="0" precious="0" loaded="0" updating="0" updated="0" is_target="1" cmd_target="0" phony="0">
-    <prerequisites>
-      <prerequisite name="seq1.rna"/>
-      <prerequisite name="seq2.rna"/>
-      <prerequisite name="seq3.rna"/>
-    </prerequisites>
-    <statements>
-      <statement>cat seq1.rna seq2.rna seq3.rna &gt; database.dna</statement>
-    </statements>
-  </target>
+  <statements>
+    <statement>echo &quot;done&quot;</statement>
+  </statements>
+</target>
 </make>
 ```
 
