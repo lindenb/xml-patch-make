@@ -10,7 +10,17 @@
 <xsl:template match="make">
 <html>
  <head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
  	<title>Makefile graph</title>
+	<script type="text/javascript" src="http://alexgorbatchev.com/pub/sh/current/scripts/shCore.js"></script>
+	<script type="text/javascript" src="http://alexgorbatchev.com/pub/sh/current/scripts/shBrushBash.js"></script>
+	<link type="text/css" rel="stylesheet" href="http://alexgorbatchev.com/pub/sh/current/styles/shCore.css"/>
+	<link type="text/css" rel="stylesheet" href="http://alexgorbatchev.com/pub/sh/current/styles/shThemeDefault.css"/>
+	<script type="text/javascript">
+		SyntaxHighlighter.config.clipboardSwf = 'http://alexgorbatchev.com/pub/sh/current/scripts/clipboard.swf';
+		SyntaxHighlighter.all();
+	</script>
+
  </head>
  <body>
  	<h1>Makefile graph</h1>
@@ -55,7 +65,7 @@
 </ul>
 <h3>#/bin/bash</h3>
 <xsl:if test="count(statements/statement)&gt;0">
-<pre><xsl:for-each select="statements/statement">
+<pre class="brush: bash;"><xsl:for-each select="statements/statement">
 <xsl:value-of select="text()"/><xsl:text>
 </xsl:text>
 </xsl:for-each></pre>
