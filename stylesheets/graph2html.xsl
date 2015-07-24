@@ -24,6 +24,7 @@
 	<script type="text/javascript">
 		SyntaxHighlighter.config.clipboardSwf = 'http://alexgorbatchev.com/pub/sh/current/scripts/clipboard.swf';
 		SyntaxHighlighter.all();
+		SyntaxHighlighter.defaults['wrap-lines'] = true;
 	</script>
  </head>
  <body>
