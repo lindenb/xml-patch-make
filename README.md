@@ -1,5 +1,7 @@
 # xml-patch-make
-XML patch allowing GNU make to output the workflow as XML
+
+patch allowing GNU make to output the workflow as XML
+
 
 # Compilation
 
@@ -11,6 +13,13 @@ output is a patched version of GNU make
 
 ```
 make-4.1/bin/xml-make4.1
+```
+
+
+# Usage
+
+```
+make-4.1/bin/xml-make4.1 -f mymakefile.mk -B --xml out.xml targetname
 ```
 
 # Example
@@ -31,7 +40,7 @@ all: database.dna
 
 
 database.dna : $(addsuffix .rna,$(addprefix seq, 1 2 3  ))
-	cat $^ > $@
+	$(description $@,concatenate all)cat $^ > $@
 
 clean:
 	rm -f *.rna *.dna
@@ -63,7 +72,7 @@ content of output.xml
     <statement>echo &quot;AUGAAGACUGACUCGAUCGAUCG&quot; &gt; seq3.rna</statement>
   </statements>
 </target>
-<target name="database.dna" description="database.dna" id="4" precious="0" phony="0">
+<target name="database.dna" description="concatenate all" id="4" precious="0" phony="0">
   <prerequisites>
     <prerequisite name="seq1.rna" ref="1"/>
     <prerequisite name="seq2.rna" ref="2"/>
@@ -100,11 +109,11 @@ content of output.xml
 </make>
 ```
 
-## XSL stylesheet
+## XSL stylesheets
 
 the folder **stylesheets** contains XSLT stylesheets to convert the XML:
 
-*  graph2dot to Graphviz/Dot
+*  graph2dot  to Graphviz/Dot
 *  graph2html to HTML
 *  graph2make to Makefile
 *  graph2gex  to GEXF
@@ -112,7 +121,7 @@ the folder **stylesheets** contains XSLT stylesheets to convert the XML:
 
 ## $(description target,desc)
 
-the Path introduces a new Make funcion
+the Patch introduces a new Make function
 
 ```make
 $(description target,desc)
@@ -125,7 +134,7 @@ all:
 	$(description $@,just print hello)echo "Hello"
 ```
 
-it is used to fill the attribute @description in the XML. It should be ignored by the original Make.
+The new function is used to fill the attribute @description in the XML. It should be ignored by the original Make.
 
 
 ## Contribute
