@@ -1,5 +1,74 @@
---- make-4.1/original/job.c	2015-07-23 19:00:55.820703381 +0200
-+++ make-4.1/make-4.1/job.c	2015-07-23 20:04:01.467475387 +0200
+--- make-4.1/original/function.c	2015-07-24 10:41:28.191175549 +0200
++++ make-4.1/make-4.1/function.c	2015-07-24 11:16:47.405684164 +0200
+@@ -26,6 +26,8 @@
+ #include "amiga.h"
+ #endif
+ 
++extern void xml_description(const char*);
++extern FILE* xml_file;
+ 
+ struct function_table_entry
+   {
+@@ -1130,7 +1132,7 @@
+       outputs (0, msg);
+       outputs (0, "\n");
+       break;
+-
++      
+     default:
+       OS (fatal, *expanding_var, "Internal error: func_error: '%s'", funcname);
+     }
+@@ -1139,6 +1141,40 @@
+   return o;
+ }
+ 
++/*
++  xml description
++*/
++static char *
++func_description (char *o, char **argv, const char *funcname)
++{
++  char **argvp;
++  char *msg, *p;
++  int len;
++
++  /* The arguments will be broken on commas.  Rather than create yet
++     another special case where function arguments aren't broken up,
++     just create a format string that puts them back together.  */
++  for (len=0, argvp=argv; *argvp != 0; ++argvp)
++    len += strlen (*argvp) + 2;
++
++  p = msg = alloca (len + 1);
++
++  for (argvp=argv; argvp[1] != 0; ++argvp)
++    {
++      strcpy (p, *argvp);
++      p += strlen (*argvp);
++      *(p++) = ',';
++      *(p++) = ' ';
++    }
++  strcpy (p, *argvp);
++
++  if( xml_file != NULL ) xml_description(msg);
++	 
++
++  /* The description function expands to the empty string.  */
++  return o;
++}
++
+ 
+ /*
+   chop argv[0] into words, and sort them.
+@@ -2296,6 +2332,7 @@
+   FT_ENTRY ("info",          0,  1,  1,  func_error),
+   FT_ENTRY ("error",         0,  1,  1,  func_error),
+   FT_ENTRY ("warning",       0,  1,  1,  func_error),
++  FT_ENTRY ("description",   0,  1,  1,  func_description),
+   FT_ENTRY ("if",            2,  3,  0,  func_if),
+   FT_ENTRY ("or",            1,  0,  0,  func_or),
+   FT_ENTRY ("and",           1,  0,  0,  func_and),
+--- make-4.1/original/job.c	2015-07-24 10:41:28.187175534 +0200
++++ make-4.1/make-4.1/job.c	2015-07-24 10:41:40.495236564 +0200
 @@ -17,15 +17,10 @@
  #include "makeint.h"
  
@@ -27,8 +96,8 @@
    /* Start the first command; reap_children will run later command lines.  */
    start_job_command (c);
  
---- make-4.1/original/main.c	2015-07-23 19:00:55.820703381 +0200
-+++ make-4.1/make-4.1/main.c	2015-07-23 20:03:00.723174179 +0200
+--- make-4.1/original/main.c	2015-07-24 10:41:28.191175549 +0200
++++ make-4.1/make-4.1/main.c	2015-07-24 10:41:40.495236564 +0200
 @@ -24,6 +24,7 @@
  #include "debug.h"
  #include "getopt.h"
@@ -115,8 +184,8 @@
      /* Exit.  */
      die (makefile_status);
    }
---- make-4.1/original/Makefile.am	2015-07-23 19:00:55.816703362 +0200
-+++ make-4.1/make-4.1/Makefile.am	2015-07-23 19:07:43.666725792 +0200
+--- make-4.1/original/Makefile.am	2015-07-24 10:41:28.203175613 +0200
++++ make-4.1/make-4.1/Makefile.am	2015-07-24 10:41:40.495236564 +0200
 @@ -43,6 +43,7 @@
  		function.c getopt.c getopt1.c guile.c implicit.c job.c load.c \
  		loadapi.c main.c misc.c output.c read.c remake.c rule.c \
@@ -126,8 +195,8 @@
  
  EXTRA_make_SOURCES = vmsjobs.c remote-stub.c remote-cstms.c
 --- make-4.1/original/xml.c	1970-01-01 01:00:00.000000000 +0100
-+++ make-4.1/make-4.1/xml.c	2015-07-23 20:15:28.698883193 +0200
-@@ -0,0 +1,211 @@
++++ make-4.1/make-4.1/xml.c	2015-07-24 11:19:21.750449520 +0200
+@@ -0,0 +1,233 @@
 +
 +#include "xml.h"
 +
@@ -137,6 +206,7 @@
 +	{
 +	int id;
 +	const char* name;
++	char* description;
 +	int phony;
 +	int precious;
 +	size_t n_prerequisites;
@@ -144,7 +214,6 @@
 +	size_t n_statements;
 +	char** statements;
 +	}Node,*NodePtr;
-+
 +
 +
 +static NodePtr NodeNew()
@@ -193,6 +262,8 @@
 +	childptr->id = (int)the_root->n_prerequisites+1;
 +	childptr->name = strdup(name);
 +	if( childptr->name ==NULL ) EXIT_WITH_ERROR;
++	
++	
 +	
 +	the_root->prerequisites =  (NodePtr*)realloc(
 +		the_root->prerequisites,
@@ -255,9 +326,18 @@
 +		fputs(" name=\"",out);
 +		escape_xml_str(out,node->name);
 +		fputc('"',out);
-+		fputs(" description=\"",out);
++	
++	fputs(" description=\"",out);
++	if(node->description != NULL)
++		{
++		escape_xml_str(out,node->description);
++		}
++	else
++		{
 +		escape_xml_str(out,node->name);
-+		fputc('"',out);
++		}
++	fputc('"',out);
++	
 +	fprintf(out," id=\"%d\"",node->id);
 +	fprintf(out," precious=\"%d\"",node->precious);
 +	fprintf(out," phony=\"%d\"",node->phony);
@@ -305,6 +385,13 @@
 +	childptr = RootFindNodeByName(child->file->name);
 +	childptr->precious = f->precious;
 +	childptr->phony = f->phony;
++	
++	if(childptr->description == NULL && child->file->description!=NULL)
++		{
++		childptr->description = child->file->description;
++		child->file->description =  NULL;
++		}
++	
 +	while( dep != NULL )
 +		{
 +		NodePtr depnode = FindNodeByName(childptr,dep->file->name);
@@ -330,7 +417,8 @@
 +void xml_finalize(FILE* out)
 +	{
 +	size_t i=0;
-+	if( out == NULL) return;
++	if( out == NULL || the_root==NULL) return;
++	
 +	fputs("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<make>\n",out);
 +	for(i=0;i< the_root->n_prerequisites;++i)
 +		{
@@ -339,8 +427,11 @@
 +	fputs("</make>\n",out);
 +    fflush(out);
 +	}
++
++
++
 --- make-4.1/original/xml.h	1970-01-01 01:00:00.000000000 +0100
-+++ make-4.1/make-4.1/xml.h	2015-07-23 20:03:08.647213470 +0200
++++ make-4.1/make-4.1/xml.h	2015-07-24 10:41:40.495236564 +0200
 @@ -0,0 +1,14 @@
 +#ifndef LOG_H
 +#define LOG_H
@@ -356,3 +447,48 @@
 +void xml_visit(struct child*);
 +void xml_finalize(FILE*);
 +#endif
+--- make-4.1/original/filedef.h	2015-07-24 10:41:28.191175549 +0200
++++ make-4.1/make-4.1/filedef.h	2015-07-24 11:03:36.893764236 +0200
+@@ -100,6 +100,7 @@
+                                    considered on current scan of goal chain */
+     unsigned int no_diag:1;     /* True if the file failed to update and no
+                                    diagnostics has been issued (dontcare). */
++    char* description; /* xml description */
+   };
+ 
+ 
+--- make-4.1/original/file.c	2015-07-24 10:41:28.195175568 +0200
++++ make-4.1/make-4.1/file.c	2015-07-24 11:11:54.080229643 +0200
+@@ -139,6 +139,19 @@
+   return f;
+ }
+ 
++static char* last_xml_description=NULL;
++void xml_description(const char* msg)
++	{
++	if(last_xml_description!=NULL)
++		{
++		free(last_xml_description);
++		last_xml_description = NULL;
++		}
++	if(msg==NULL || strlen(msg)==0) return;
++	last_xml_description = xstrdup(msg);
++	}
++
++
+ /* Look up a file record for file NAME and return it.
+    Create a new record if one doesn't exist.  NAME will be stored in the
+    new record so it should be constant or in the strcache etc.
+@@ -185,6 +198,12 @@
+   new = xcalloc (sizeof (struct file));
+   new->name = new->hname = name;
+   new->update_status = us_none;
++  new->description = NULL;
++  if( last_xml_description != NULL)
++  	{
++  	new->description = last_xml_description;
++  	last_xml_description = NULL;
++  	}
+ 
+   if (HASH_VACANT (f))
+     {

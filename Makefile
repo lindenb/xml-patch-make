@@ -10,7 +10,7 @@ make-$(make.version)/bin/xml-make$(make.version) : src/xml-make-$(make.version).
 	cp $< make-$(make.version)/make-$(make.version)/
 	cp -r make-$(make.version)/make-$(make.version) make-$(make.version)/original
 	rm make-$(make.version).tar.gz
-	(cd make-$(make.version)/make-$(make.version) &&  ./configure --prefix=$${PWD}/..  --program-prefix=xml- --program-suffix=$(make.version) && patch   --input=$(notdir $<) --batch && make install)
+	(cd make-$(make.version)/make-$(make.version) &&  autoreconf && automake && ./configure --prefix=$${PWD}/..  --program-prefix=xml- --program-suffix=$(make.version) && patch   --input=$(notdir $<) --batch && make install)
 
 test: make-$(make.version)/bin/xml-make$(make.version)
 	$< -C tests -f test01.mk --xml tests/test01.xml all clean
@@ -21,5 +21,5 @@ clean :
 
 _patch: 
 	rm -f tmp.patch
-	-$(foreach F,job.c main.c Makefile.am xml.c xml.h, diff  --new-file --text --unified make-$(make.version)/original/$(F) make-$(make.version)/make-$(make.version)/$(F) >> tmp.patch ;)
+	-$(foreach F,function.c job.c main.c Makefile.am xml.c xml.h filedef.h file.c, diff  --new-file --text --unified make-$(make.version)/original/$(F) make-$(make.version)/make-$(make.version)/$(F) >> tmp.patch ;)
 	
