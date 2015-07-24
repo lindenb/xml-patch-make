@@ -108,7 +108,7 @@ the folder **stylesheets** contains XSLT stylesheets to convert the XML:
 *  graph2html to HTML
 *  graph2make to Makefile
 *  graph2gex  to GEXF
-
+*  graph2markdown to Markdown
 
 ## Contribute
 
@@ -117,7 +117,7 @@ the folder **stylesheets** contains XSLT stylesheets to convert the XML:
 
 ##See also
 
-* 
+* https://github.com/lindenb/makefile2graph
 
 ##History
 
