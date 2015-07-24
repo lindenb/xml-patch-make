@@ -1,14 +1,14 @@
 .PHONY: all test
 
 %.rna : 
-	echo "AUGAAGACUGACUCGAUCGAUCG" > $@
+	$(description $@,print a RNA sequence)echo "AUGAAGACUGACUCGAUCGAUCG" > $@
 
 
 %.dna : %.rna
 	tr "U" T" < $< > $@
 
 all  : database.dna test.log 
-	echo "done"
+	$(description $@,this is the main target)echo "done"
 
 
 test.log: test
@@ -17,7 +17,7 @@ test.log: test
 test: database.dna log.rna
 
 database.dna : $(addsuffix .rna,$(addprefix seq, 1 2 3  ))
-	cat $^ > $@
+	$(description $@,concatenate everything)cat $^ > $@
 
 
 clean:

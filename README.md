@@ -110,6 +110,24 @@ the folder **stylesheets** contains XSLT stylesheets to convert the XML:
 *  graph2gex  to GEXF
 *  graph2markdown to Markdown
 
+## $(description target,desc)
+
+the Path introduces a new Make funcion
+
+```make
+$(description target,desc)
+```
+
+it can be used anywhere
+
+```make
+all:
+	$(description $@,just print hello)echo "Hello"
+```
+
+it is used to fill the attribute @description in the XML. It should be ignored by the original Make.
+
+
 ## Contribute
 
 - Issue Tracker: http://github.com/lindenb/xml-patch-make/issues
