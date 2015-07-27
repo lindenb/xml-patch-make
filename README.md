@@ -136,6 +136,32 @@ all:
 
 The new function is used to fill the attribute @description in the XML. It should be ignored by the original Make.
 
+# $(n-core target,integer) $(n-proc target,integer)
+
+` $(n-core target,integer)` and `$(n-proc target,integer)` are two new function used to specifiy the number of core/proc for each target.
+
+e.g:
+
+```make
+all  : database.dna test.log 
+	$(description $@,this is the main target)$(n-proc $@,1)$(n-core $@,1)echo "done"
+```
+
+output:
+
+```xml
+  <target name="all" description="this is the main target" id="8" precious="0" phony="1" core="1" proc="1">
+    <prerequisites>
+      <prerequisite name="database.dna" ref="4"/>
+      <prerequisite name="test.log" ref="6"/>
+    </prerequisites>
+    <statements>
+      <statement>echo "done"</statement>
+    </statements>
+  </target>
+```
+
+
 
 ## Contribute
 
