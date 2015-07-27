@@ -16,7 +16,7 @@ test.log: test
 
 test: database.dna log.rna
 
-database.dna : $(addsuffix .rna,$(addprefix seq, 1 2 3  ))
+database.dna : $(addsuffix .dna,$(addprefix seq, 1 2 3  ))
 	$(description $@,concatenate everything)cat $^ > $@
 
 
