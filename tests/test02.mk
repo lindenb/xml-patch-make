@@ -5,7 +5,7 @@
 
 
 %.dna : %.rna
-	tr "U" T" < $< > $@
+	tr "U" "T" < $< > $@
 
 all  : database.dna test.log 
 	$(description $@,this is the main target)$(n-proc $@,1)$(n-core $@,1)echo "done"
