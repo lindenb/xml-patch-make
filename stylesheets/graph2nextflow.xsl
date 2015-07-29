@@ -33,12 +33,14 @@ https://www.biostars.org/p/152226/#152386
 
 /** <xsl:value-of select="@name"/>  : <xsl:value-of select="@description"/> */
 process <xsl:value-of select="concat('proc',$this/@id)"/>	{
+
+<xsl:if test="count($deps)&gt;0">	
 	
 	output:<xsl:for-each select="$deps">
 	file '<xsl:value-of select="$this/@name"/>' into <xsl:value-of select="concat('proc',@id,'_input')"/>
 	</xsl:for-each>
-	file '<xsl:value-of select="$this/@name"/>' into <xsl:value-of select="concat('proc',$this/@id,'_output')"/>
-
+	
+</xsl:if>
 
 <xsl:if test="count(prerequisites/prerequisite)&gt;0">
 	
@@ -49,11 +51,11 @@ process <xsl:value-of select="concat('proc',$this/@id)"/>	{
 	
 	'''
 	#!<xsl:value-of select="/make/@shell"/>
+	<xsl:text>
+	</xsl:text>
 	<xsl:for-each select="statements/statement">
 	<xsl:value-of select="text()"/><xsl:text>
-	</xsl:text></xsl:for-each><xsl:if test="@phony=1">
-	touch "<xsl:value-of select="@name"/>"
-	</xsl:if>'''
+	</xsl:text></xsl:for-each>'''
 	}
 
 
