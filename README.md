@@ -118,6 +118,8 @@ the folder **stylesheets** contains XSLT stylesheets to convert the XML:
 *  graph2make to Makefile
 *  graph2gex  to GEXF
 *  graph2markdown to Markdown
+*  graph2snake to Snakemake see https://github.com/lindenb/xml-patch-make/wiki/SnakeMake
+*  graph2nextflow to nextflow.io see https://github.com/lindenb/xml-patch-make/wiki/Tabix
 
 ## $(description target,desc)
 

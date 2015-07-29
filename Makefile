@@ -22,6 +22,7 @@ test: ${xmake.exe}
 	$(foreach T,${testlist}, xsltproc --output tests/test${T}.md stylesheets/graph2markdown.xsl tests/test${T}.xml  ;)
 	$(foreach T,${testlist}, xsltproc --output tests/test${T}.html stylesheets/graph2html.xsl tests/test${T}.xml  ;)
 	$(foreach T,${testlist}, xsltproc --output tests/test${T}.nf stylesheets/graph2nextflow.xsl tests/test${T}.xml  ;)
+	$(foreach T,${testlist}, xsltproc --output tests/test${T}.snake stylesheets/graph2snake.xsl tests/test${T}.xml  ;)
 
 clean :
 	rm -rf make-$(make.version) nextflow ${xmake.exe} 
