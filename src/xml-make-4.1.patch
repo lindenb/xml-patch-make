@@ -1,5 +1,21 @@
---- make-4.1/original/function.c	2015-07-29 09:38:21.924740970 +0200
-+++ make-4.1/make-4.1/function.c	2015-07-29 09:38:37.028815856 +0200
+--- make-4.1/original/remake.c	2015-07-29 09:42:38.190011708 +0200
++++ make-4.1/make-4.1/remake.c	2015-07-29 11:31:24.826375552 +0200
+@@ -1198,11 +1198,13 @@
+    do whatever is appropriate to remake FILE itself.
+    Return the status from executing FILE's commands.  */
+ 
++extern void* xml_visit_file(struct file *file);
+ static void
+ remake_file (struct file *file)
+ {
+   if (file->cmds == 0)
+     {
++		 xml_visit_file(file);
+       if (file->phony)
+         /* Phony target.  Pretend it succeeded.  */
+         file->update_status = us_success;
+--- make-4.1/original/function.c	2015-07-29 09:42:38.186011691 +0200
++++ make-4.1/make-4.1/function.c	2015-07-29 09:42:50.650073498 +0200
 @@ -14,19 +14,14 @@
  You should have received a copy of the GNU General Public License along with
  this program.  If not, see <http://www.gnu.org/licenses/>.  */
@@ -83,8 +99,8 @@
    FT_ENTRY ("if",            2,  3,  0,  func_if),
    FT_ENTRY ("or",            1,  0,  0,  func_or),
    FT_ENTRY ("and",           1,  0,  0,  func_and),
---- make-4.1/original/job.c	2015-07-29 09:38:21.920740928 +0200
-+++ make-4.1/make-4.1/job.c	2015-07-29 09:38:37.028815856 +0200
+--- make-4.1/original/job.c	2015-07-29 09:42:38.182011678 +0200
++++ make-4.1/make-4.1/job.c	2015-07-29 11:13:57.269180992 +0200
 @@ -17,15 +17,10 @@
  #include "makeint.h"
  
@@ -112,8 +128,8 @@
    /* Start the first command; reap_children will run later command lines.  */
    start_job_command (c);
  
---- make-4.1/original/main.c	2015-07-29 09:38:21.924740970 +0200
-+++ make-4.1/make-4.1/main.c	2015-07-29 09:38:37.028815856 +0200
+--- make-4.1/original/main.c	2015-07-29 09:42:38.186011691 +0200
++++ make-4.1/make-4.1/main.c	2015-07-29 09:42:50.650073498 +0200
 @@ -24,6 +24,7 @@
  #include "debug.h"
  #include "getopt.h"
@@ -200,8 +216,8 @@
      /* Exit.  */
      die (makefile_status);
    }
---- make-4.1/original/Makefile.am	2015-07-29 09:38:21.936741013 +0200
-+++ make-4.1/make-4.1/Makefile.am	2015-07-29 09:38:37.028815856 +0200
+--- make-4.1/original/Makefile.am	2015-07-29 09:42:38.198011758 +0200
++++ make-4.1/make-4.1/Makefile.am	2015-07-29 09:42:50.650073498 +0200
 @@ -43,6 +43,7 @@
  		function.c getopt.c getopt1.c guile.c implicit.c job.c load.c \
  		loadapi.c main.c misc.c output.c read.c remake.c rule.c \
@@ -211,8 +227,8 @@
  
  EXTRA_make_SOURCES = vmsjobs.c remote-stub.c remote-cstms.c
 --- make-4.1/original/xml.c	1970-01-01 01:00:00.000000000 +0100
-+++ make-4.1/make-4.1/xml.c	2015-07-29 09:41:26.201654745 +0200
-@@ -0,0 +1,340 @@
++++ make-4.1/make-4.1/xml.c	2015-07-29 11:30:38.694146794 +0200
+@@ -0,0 +1,350 @@
 +
 +#include "xml.h"
 +
@@ -462,16 +478,13 @@
 +	node->printed=1;
 +	}
 +
-+
-+void xml_visit(struct child* child)
++void* xml_visit_file(struct file *f)
 +	{
-+	int i=0;
-+	struct file* f = child->file;
 +	struct dep* dep = f->deps;
 +	NodePtr childptr=NULL;
-+	if( xml_file == NULL) return;
++	if( xml_file == NULL) return NULL;
 +	//find node
-+	childptr = RootFindNodeByName(child->file->name);
++	childptr = RootFindNodeByName(f->name);
 +	childptr->precious = f->precious;
 +	childptr->phony = f->phony;
 +	
@@ -482,7 +495,17 @@
 +		depnode->phony = dep->file->phony;
 +		dep = dep->next;
 +		}
-+				
++	return childptr;
++	}
++
++void xml_visit(struct child* child)
++	{
++	int i=0;
++	NodePtr childptr = NULL;
++	if( xml_file == NULL) return;
++ 	childptr = (NodePtr)xml_visit_file(child->file);
++	if( childptr ==NULL ) return;
++	
 +	for( i=0;i< child->file->cmds->ncommand_lines;++i)
 +		{
 +		//add statements
@@ -497,6 +520,9 @@
 +		childptr->n_statements++;
 +		}
 +	}
++
++
++
 +
 +void xml_finalize(FILE* out)
 +	{
@@ -554,7 +580,7 @@
 +
 +
 --- make-4.1/original/xml.h	1970-01-01 01:00:00.000000000 +0100
-+++ make-4.1/make-4.1/xml.h	2015-07-29 09:38:37.028815856 +0200
++++ make-4.1/make-4.1/xml.h	2015-07-29 09:42:50.650073498 +0200
 @@ -0,0 +1,26 @@
 +#ifndef LOG_H
 +#define LOG_H
@@ -582,8 +608,8 @@
 +NodeMetadataPtr xml_find_metadata(const char* name,int create_if_missing);
 +
 +#endif
---- make-4.1/original/file.c	2015-07-29 09:38:21.928740981 +0200
-+++ make-4.1/make-4.1/file.c	2015-07-29 09:38:37.032815886 +0200
+--- make-4.1/original/file.c	2015-07-29 09:42:38.190011708 +0200
++++ make-4.1/make-4.1/file.c	2015-07-29 09:42:50.650073498 +0200
 @@ -139,6 +139,9 @@
    return f;
  }

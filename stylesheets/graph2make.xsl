@@ -53,7 +53,7 @@
 </xsl:text>
 
 <xsl:for-each select="statements/statement">
-    <xsl:text>  </xsl:text>
+    <xsl:text>	</xsl:text>
     <xsl:call-template name="escape">
         <xsl:with-param name="s" select="text()"/>
     </xsl:call-template>

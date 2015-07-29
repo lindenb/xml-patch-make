@@ -48,7 +48,7 @@ process <xsl:value-of select="concat('proc',$this/@id)"/>	{
 </xsl:if>
 	
 	'''
-	#!/bin/bash
+	#!<xsl:value-of select="/make/@shell"/>
 	<xsl:for-each select="statements/statement">
 	<xsl:value-of select="text()"/><xsl:text>
 	</xsl:text></xsl:for-each><xsl:if test="@phony=1">
