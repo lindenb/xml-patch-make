@@ -42,9 +42,8 @@ process <xsl:value-of select="concat('proc',$this/@id)"/>	{
 	tag { '<xsl:value-of select="@description"/>' }	
 	
 </xsl:if>
-	output:<xsl:if test="count(statements/statement)=0 or @phony='1'">
-	file <xsl:apply-templates select="$this" mode="phony-name"/></xsl:if>
-	<xsl:for-each select="$deps">
+	output:
+	file <xsl:apply-templates select="$this" mode="phony-name"/><xsl:for-each select="$deps">
 	file <xsl:apply-templates select="$this" mode="phony-name"/> into <xsl:value-of select="concat('proc_',$this/@id,'_to_',@id)"/>
 	</xsl:for-each>
 
