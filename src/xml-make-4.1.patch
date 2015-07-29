@@ -1,5 +1,5 @@
---- make-4.1/original/function.c	2015-07-27 10:08:34.619650159 +0200
-+++ make-4.1/make-4.1/function.c	2015-07-27 10:08:49.979726322 +0200
+--- make-4.1/original/function.c	2015-07-28 17:10:39.681308340 +0200
++++ make-4.1/make-4.1/function.c	2015-07-28 17:10:54.661382619 +0200
 @@ -14,19 +14,14 @@
  You should have received a copy of the GNU General Public License along with
  this program.  If not, see <http://www.gnu.org/licenses/>.  */
@@ -83,8 +83,8 @@
    FT_ENTRY ("if",            2,  3,  0,  func_if),
    FT_ENTRY ("or",            1,  0,  0,  func_or),
    FT_ENTRY ("and",           1,  0,  0,  func_and),
---- make-4.1/original/job.c	2015-07-27 10:08:34.619650159 +0200
-+++ make-4.1/make-4.1/job.c	2015-07-27 10:08:49.979726322 +0200
+--- make-4.1/original/job.c	2015-07-28 17:10:39.677308311 +0200
++++ make-4.1/make-4.1/job.c	2015-07-28 17:10:54.661382619 +0200
 @@ -17,15 +17,10 @@
  #include "makeint.h"
  
@@ -112,8 +112,8 @@
    /* Start the first command; reap_children will run later command lines.  */
    start_job_command (c);
  
---- make-4.1/original/main.c	2015-07-27 10:08:34.619650159 +0200
-+++ make-4.1/make-4.1/main.c	2015-07-27 10:08:49.979726322 +0200
+--- make-4.1/original/main.c	2015-07-28 17:10:39.681308340 +0200
++++ make-4.1/make-4.1/main.c	2015-07-28 17:10:54.661382619 +0200
 @@ -24,6 +24,7 @@
  #include "debug.h"
  #include "getopt.h"
@@ -200,8 +200,8 @@
      /* Exit.  */
      die (makefile_status);
    }
---- make-4.1/original/Makefile.am	2015-07-27 10:08:34.635650235 +0200
-+++ make-4.1/make-4.1/Makefile.am	2015-07-27 10:08:49.979726322 +0200
+--- make-4.1/original/Makefile.am	2015-07-28 17:10:39.693308390 +0200
++++ make-4.1/make-4.1/Makefile.am	2015-07-28 17:10:54.661382619 +0200
 @@ -43,6 +43,7 @@
  		function.c getopt.c getopt1.c guile.c implicit.c job.c load.c \
  		loadapi.c main.c misc.c output.c read.c remake.c rule.c \
@@ -211,8 +211,8 @@
  
  EXTRA_make_SOURCES = vmsjobs.c remote-stub.c remote-cstms.c
 --- make-4.1/original/xml.c	1970-01-01 01:00:00.000000000 +0100
-+++ make-4.1/make-4.1/xml.c	2015-07-28 17:02:27.106865787 +0200
-@@ -0,0 +1,301 @@
++++ make-4.1/make-4.1/xml.c	2015-07-29 09:18:21.810789922 +0200
+@@ -0,0 +1,323 @@
 +
 +#include "xml.h"
 +
@@ -503,7 +503,29 @@
 +	size_t i=0;
 +	if( out == NULL ) return;
 +	
-+	fputs("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<make>\n",out);
++struct variable *p = NULL;
++    if( out == NULL) return;
++    fputs("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<make",out);
++    p = lookup_variable ("SHELL", 5);
++    if(p==NULL)
++        {
++        fputs(" shell=\"/bin/sh\"",out);
++        }
++    else
++        {
++        fputs(" shell=\"",out);
++        escape_xml_str(out,p->value);
++        fputs("\"",out);
++        }   
++    p = lookup_variable (".SHELLFLAGS", 11);
++    if(p!=NULL)
++        {
++        fputs(" shellflags=\"",out);
++        escape_xml_str(out,p->value);
++        fputs("\"",out);
++        }
++    fputs(">\n",out);
++    
 +	for(i=0;the_root!=NULL && i< the_root->n_prerequisites;++i)
 +		{
 +		RecursiveNodePrint(out,the_root->prerequisites[i]);
@@ -515,7 +537,7 @@
 +
 +
 --- make-4.1/original/xml.h	1970-01-01 01:00:00.000000000 +0100
-+++ make-4.1/make-4.1/xml.h	2015-07-28 16:55:47.908886262 +0200
++++ make-4.1/make-4.1/xml.h	2015-07-28 17:10:54.661382619 +0200
 @@ -0,0 +1,26 @@
 +#ifndef LOG_H
 +#define LOG_H
@@ -543,8 +565,8 @@
 +NodeMetadataPtr xml_find_metadata(const char* name,int create_if_missing);
 +
 +#endif
---- make-4.1/original/file.c	2015-07-27 10:08:34.623650173 +0200
-+++ make-4.1/make-4.1/file.c	2015-07-27 10:08:49.983726342 +0200
+--- make-4.1/original/file.c	2015-07-28 17:10:39.685308355 +0200
++++ make-4.1/make-4.1/file.c	2015-07-28 17:10:54.661382619 +0200
 @@ -139,6 +139,9 @@
    return f;
  }
