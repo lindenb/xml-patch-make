@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+  <xs:element name="make">
+     <xs:complexType>
+        <xs:sequence>
+        
+           <xs:element name="target" maxOccurs="unbounded">
+              <xs:complexType>
+                 <xs:sequence>
+                 
+				     <xs:element name="prerequisites"  minOccurs="0" maxOccurs="1">
+				        <xs:complexType>
+				           <xs:sequence>
+				              <xs:element name="prerequisite" minOccurs="0" maxOccurs="unbounded">
+				                  <xs:complexType>
+				              		 <xs:attribute name="name" type="xs:normalizedString" use="required"/>
+				              		 <xs:attribute name="ref" type="xs:int" use="required"/>
+				                  </xs:complexType>
+				              </xs:element>
+				           </xs:sequence>
+				        </xs:complexType>
+				     </xs:element>
+                 
+                 
+		          	<xs:element name="statements" minOccurs="0" maxOccurs="1">
+		                <xs:complexType>
+		                   <xs:sequence>
+		                      <xs:element name="statement" type="xs:string" minOccurs="0" maxOccurs="unbounded">
+		                      </xs:element>
+		                   </xs:sequence>
+		                </xs:complexType>
+		             </xs:element>
+		             
+		             
+		             
+              </xs:sequence>
+              <xs:attribute name="name" type="xs:normalizedString" use="required"/>
+              <xs:attribute name="description" type="xs:string"/>
+              <xs:attribute name="id" type="xs:int" use="required"/>
+              <xs:attribute name="precious" type="xs:int"/>
+              <xs:attribute name="phony" type="xs:int"/>
+              <xs:attribute name="proc" type="xs:int"/>
+              <xs:attribute name="core" type="xs:int"/>
+              </xs:complexType>
+           </xs:element>
+        </xs:sequence>
+        <xs:attribute name="shell" type="xs:string"/>
+        <xs:attribute name="shellflags" type="xs:string"/>
+        <xs:attribute name="path" type="xs:string"/>
+        <xs:attribute name="pwd" type="xs:string"/>
+     </xs:complexType>
+  </xs:element>
+</xs:schema>

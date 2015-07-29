@@ -16,7 +16,7 @@ ${xmake.exe} : src/xml-make-$(make.version).patch
 	(cd make-$(make.version)/make-$(make.version) &&  autoreconf && automake && ./configure --prefix=$${PWD}/..  --program-prefix=xml- --program-suffix=$(make.version) && patch   --input=$(notdir $<) --batch && make install)
 
 test: ${xmake.exe} 
-	$(foreach T,${testlist}, $< -C tests -f test${T}.mk --xml tests/test${T}.xml ; )
+	$(foreach T,${testlist}, $< -C tests -f test${T}.mk --xml tests/test${T}.xml && xmllint --noout --schema xsd/graph.xsd tests/test${T}.xml; )
 	$(foreach T,${testlist}, xsltproc --output tests/test${T}.make  stylesheets/graph2make.xsl tests/test${T}.xml  ;)
 	$(foreach T,${testlist}, xsltproc --output tests/test${T}.gexf stylesheets/graph2gexf.xsl tests/test${T}.xml  ;)
 	$(foreach T,${testlist}, xsltproc --output tests/test${T}.md stylesheets/graph2markdown.xsl tests/test${T}.xml  ;)
