@@ -41,13 +41,16 @@
               <xs:attribute name="phony" type="xs:int"/>
               <xs:attribute name="proc" type="xs:int"/>
               <xs:attribute name="core" type="xs:int"/>
+              <xs:attribute name="depth" type="xs:int"/>
               </xs:complexType>
            </xs:element>
         </xs:sequence>
+        <xs:attribute name="make-version" type="xs:string"/>
         <xs:attribute name="shell" type="xs:string"/>
         <xs:attribute name="shellflags" type="xs:string"/>
         <xs:attribute name="path" type="xs:string"/>
         <xs:attribute name="pwd" type="xs:string"/>
+        <xs:attribute name="depth" type="xs:int"/>
      </xs:complexType>
   </xs:element>
 </xs:schema>

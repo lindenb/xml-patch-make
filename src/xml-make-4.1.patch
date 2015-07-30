@@ -1,5 +1,5 @@
---- make-4.1/original/remake.c	2015-07-29 09:42:38.190011708 +0200
-+++ make-4.1/make-4.1/remake.c	2015-07-29 11:31:24.826375552 +0200
+--- make-4.1/original/remake.c	2015-07-29 11:32:27.222684965 +0200
++++ make-4.1/make-4.1/remake.c	2015-07-29 11:32:39.382745257 +0200
 @@ -1198,11 +1198,13 @@
     do whatever is appropriate to remake FILE itself.
     Return the status from executing FILE's commands.  */
@@ -14,8 +14,8 @@
        if (file->phony)
          /* Phony target.  Pretend it succeeded.  */
          file->update_status = us_success;
---- make-4.1/original/function.c	2015-07-29 09:42:38.186011691 +0200
-+++ make-4.1/make-4.1/function.c	2015-07-29 09:42:50.650073498 +0200
+--- make-4.1/original/function.c	2015-07-29 11:32:27.218684940 +0200
++++ make-4.1/make-4.1/function.c	2015-07-29 11:32:39.382745257 +0200
 @@ -14,19 +14,14 @@
  You should have received a copy of the GNU General Public License along with
  this program.  If not, see <http://www.gnu.org/licenses/>.  */
@@ -99,8 +99,8 @@
    FT_ENTRY ("if",            2,  3,  0,  func_if),
    FT_ENTRY ("or",            1,  0,  0,  func_or),
    FT_ENTRY ("and",           1,  0,  0,  func_and),
---- make-4.1/original/job.c	2015-07-29 09:42:38.182011678 +0200
-+++ make-4.1/make-4.1/job.c	2015-07-29 11:13:57.269180992 +0200
+--- make-4.1/original/job.c	2015-07-29 11:32:27.218684940 +0200
++++ make-4.1/make-4.1/job.c	2015-07-29 11:32:39.386745282 +0200
 @@ -17,15 +17,10 @@
  #include "makeint.h"
  
@@ -128,8 +128,8 @@
    /* Start the first command; reap_children will run later command lines.  */
    start_job_command (c);
  
---- make-4.1/original/main.c	2015-07-29 09:42:38.186011691 +0200
-+++ make-4.1/make-4.1/main.c	2015-07-29 09:42:50.650073498 +0200
+--- make-4.1/original/main.c	2015-07-29 11:32:27.218684940 +0200
++++ make-4.1/make-4.1/main.c	2015-07-29 11:32:39.386745282 +0200
 @@ -24,6 +24,7 @@
  #include "debug.h"
  #include "getopt.h"
@@ -216,8 +216,8 @@
      /* Exit.  */
      die (makefile_status);
    }
---- make-4.1/original/Makefile.am	2015-07-29 09:42:38.198011758 +0200
-+++ make-4.1/make-4.1/Makefile.am	2015-07-29 09:42:50.650073498 +0200
+--- make-4.1/original/Makefile.am	2015-07-29 11:32:27.234685024 +0200
++++ make-4.1/make-4.1/Makefile.am	2015-07-29 11:32:39.386745282 +0200
 @@ -43,6 +43,7 @@
  		function.c getopt.c getopt1.c guile.c implicit.c job.c load.c \
  		loadapi.c main.c misc.c output.c read.c remake.c rule.c \
@@ -227,9 +227,9 @@
  
  EXTRA_make_SOURCES = vmsjobs.c remote-stub.c remote-cstms.c
 --- make-4.1/original/xml.c	1970-01-01 01:00:00.000000000 +0100
-+++ make-4.1/make-4.1/xml.c	2015-07-29 11:30:38.694146794 +0200
-@@ -0,0 +1,350 @@
-+
++++ make-4.1/make-4.1/xml.c	2015-07-30 10:33:51.307846459 +0200
+@@ -0,0 +1,414 @@
++#include "config.h"
 +#include "xml.h"
 +
 +#define EXIT_WITH_ERROR do { fprintf(stderr,"Exiting %s %d\n",__FILE__,__LINE__);exit(-1);} while(0)
@@ -240,6 +240,7 @@
 +	const char* name;
 +	int phony;
 +	int precious;
++	int depth;
 +	size_t n_prerequisites;
 +	struct Node** prerequisites;
 +	size_t n_statements;
@@ -292,9 +293,10 @@
 +	//not found, add it
 +	childptr = NodeNew();
 +	childptr->id = (int)the_root->n_prerequisites+1;
-+	childptr->name = strdup(name);
++	childptr->name = xstrdup(name);
 +	childptr->printed = 0;
-+	if( childptr->name ==NULL ) EXIT_WITH_ERROR;
++	childptr->depth = -1;
++
 +	
 +	
 +	
@@ -436,6 +438,7 @@
 +	fprintf(out," id=\"%d\"",node->id);
 +	fprintf(out," precious=\"%d\"",node->precious);
 +	fprintf(out," phony=\"%d\"",node->phony);
++	fprintf(out," depth=\"%d\"",node->depth);
 +	
 +	if( meta!=NULL && meta->n_core>0)
 +		{
@@ -498,6 +501,65 @@
 +	return childptr;
 +	}
 +
++static void TopoSortNode(NodePtr node,int depth)
++	{
++	int i,j;
++	if(node==NULL) return;
++	
++	if( node->depth != -1 ) return;
++
++	node->depth = depth;
++	
++	//backward loop, search in ROOT the parents of this node
++	for(i=0; i< the_root->n_prerequisites;++i)
++		{
++		NodePtr parent = the_root->prerequisites[i];
++		for(j=0; j< parent->n_prerequisites;++j)
++			{
++			if( parent->prerequisites[j] == node)
++				{
++				TopoSortNode(parent,node->depth-1);
++				}
++			}
++		}
++	
++	for(i=0; i< node->n_prerequisites;++i)
++			{
++			TopoSortNode(node->prerequisites[i],node->depth+1);
++			}
++	
++	}
++
++static void TopoSort()
++	{
++	int i=0, done=0,min_depth=0,max_depth=0;
++	if( the_root==NULL) return;
++	
++	for(i=the_root->n_prerequisites-1;i>=0;--i)
++		{
++		TopoSortNode(the_root->prerequisites[i],0);
++		}
++	/* get min/max */
++	for(i=0;i< the_root->n_prerequisites;++i)
++		{
++		int d = the_root->prerequisites[i]->depth;
++		min_depth = (min_depth>d?d:min_depth);
++		max_depth = (max_depth<d?d:max_depth);
++		}
++	the_root->depth=0;
++	/* normalize */
++	for(i=0;i< the_root->n_prerequisites;++i)
++		{
++		int d =   the_root->prerequisites[i]->depth -min_depth;
++		the_root->prerequisites[i]->depth = d;
++		
++		the_root->depth=(the_root->depth < d?
++			d:
++			the_root->depth
++			);
++		}
++	}
++
 +void xml_visit(struct child* child)
 +	{
 +	int i=0;
@@ -527,11 +589,16 @@
 +void xml_finalize(FILE* out)
 +	{
 +	size_t i=0;
-+	if( out == NULL ) return;
++	struct variable *p = NULL;
++    if( out == NULL  ) return;
++	TopoSort();
 +	
-+struct variable *p = NULL;
-+    if( out == NULL) return;
-+    fputs("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<make",out);
++	fputs("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<make make-version=\"" ,out);
++    
++    escape_xml_str(out,VERSION);
++    fputs("\"",out);
++    fprintf(out," depth=\"%d\"",(the_root==NULL?0:the_root->depth));
++    
 +    p = lookup_variable ("SHELL", 5);
 +    if(p==NULL)
 +        {
@@ -564,9 +631,6 @@
 +        escape_xml_str(out,p->value);
 +        fputs("\"",out);
 +        }
-+        
-+        
-+        
 +    fputs(">\n",out);
 +    
 +	for(i=0;the_root!=NULL && i< the_root->n_prerequisites;++i)
@@ -580,7 +644,7 @@
 +
 +
 --- make-4.1/original/xml.h	1970-01-01 01:00:00.000000000 +0100
-+++ make-4.1/make-4.1/xml.h	2015-07-29 09:42:50.650073498 +0200
++++ make-4.1/make-4.1/xml.h	2015-07-29 11:32:39.386745282 +0200
 @@ -0,0 +1,26 @@
 +#ifndef LOG_H
 +#define LOG_H
@@ -608,8 +672,8 @@
 +NodeMetadataPtr xml_find_metadata(const char* name,int create_if_missing);
 +
 +#endif
---- make-4.1/original/file.c	2015-07-29 09:42:38.190011708 +0200
-+++ make-4.1/make-4.1/file.c	2015-07-29 09:42:50.650073498 +0200
+--- make-4.1/original/file.c	2015-07-29 11:32:27.222684965 +0200
++++ make-4.1/make-4.1/file.c	2015-07-29 11:32:39.386745282 +0200
 @@ -139,6 +139,9 @@
    return f;
  }
