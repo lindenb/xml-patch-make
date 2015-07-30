@@ -1,6 +1,6 @@
 SHELL=/bin/bash
 make.version=4.1
-testlist=01 02 03
+testlist=01 02 03 04
 xmake.exe=make-$(make.version)/bin/xml-make$(make.version) 
 
 .PHONY: all clean download-make test _patch test-nextflow
@@ -23,6 +23,7 @@ test: ${xmake.exe}
 	$(foreach T,${testlist}, xsltproc --output tests/test${T}.html stylesheets/graph2html.xsl tests/test${T}.xml  ;)
 	$(foreach T,${testlist}, xsltproc --output tests/test${T}.nf stylesheets/graph2nextflow.xsl tests/test${T}.xml  ;)
 	$(foreach T,${testlist}, xsltproc --output tests/test${T}.snake stylesheets/graph2snake.xsl tests/test${T}.xml  ;)
+	$(foreach T,${testlist}, xsltproc --stringparam base.dir tests/OUT${T}-CWL --output tests/test${T}.cwl stylesheets/graph2cwl.xsl tests/test${T}.xml  ;)
 
 clean :
 	rm -rf make-$(make.version) nextflow ${xmake.exe} 
