@@ -30,20 +30,28 @@
 <xsl:text>#!/usr/bin/env cwl-runner
 </xsl:text>
 
-<xsl:for-each select="target">
- <xsl:sort select="position()" data-type="number" order="descending"/>
-	<xsl:apply-templates select="." mode="cmd"/>
-</xsl:for-each>
+- id: "#make2cwl"
+  class: CommandLineTool
+  description: "make2cwl"
+  inputs:
+  	- id: "#targetid"
+  	  description: "make2cwl"
+  	  type: int
+  	  inputBinding:
+  	      position: 1
+  outputs:
+    - id: "#output"
+      type: File
+      outputBinding:
+        glob:  make2cwl.ok
+  baseCommand: make2cwl.sh
 
 - id: "#main"
   class: Workflow
   outputs:
     - id: "#outfile"
       type: File
-      source: "#combine_sequences.catout"
-
-  requirements:
-    - class: ScatterFeatureRequirement
+      source: "<xsl:value-of select="concat($top/@ref,'.ok.flag')"/>"
 
   steps:
 <xsl:for-each select="target">
@@ -55,51 +63,51 @@
 </xsl:template>   
 
 
-<xsl:template match="target" mode="cmd">
-
-- id: "<xsl:value-of select="concat('#cmd',@id)"/>"
-  class: CommandLineTool
-  description: "<xsl:value-of select="@name"/>"
-  inputs:<xsl:for-each select="prerequisites/prerequisite">
-  	- id: "<xsl:value-of select="concat('#slot',@ref)"/>"
-  	  description: "<xsl:value-of select="@name"/>"
-  	  type: File
-  	  inputBinding:
-  	      position: <xsl:value-of select="position()"/>
-  	</xsl:for-each>
-  outputs:
-    - id: "#output"
-      type: File
-      outputBinding:
-        glob:  <xsl:apply-templates select="." mode="phony-name"/>
-  baseCommand: <xsl:value-of select="concat('proc',@id,'.sh')"/>
-
-<xsl:text>
-
-</xsl:text>
-</xsl:template>
-
+<!--==== TARGET STEP ===================================================== -->
 <xsl:template match="target" mode="step">
   - id: "<xsl:value-of select="concat('#step',@id)"/>"
     inputs:<xsl:for-each select="prerequisites/prerequisite">
-      - { id: "<xsl:value-of select="concat('#step',@ref)"/>", source: "<xsl:value-of select="concat('#cmd',@ref)"/>.output" }</xsl:for-each>
+      - { id: "#targetid", source: "#step<xsl:value-of select="@ref"/>.output" }</xsl:for-each>
     outputs:
       - { id: "<xsl:value-of select="concat('#step',@id,'.output')"/>" }
-    run: { import: "<xsl:value-of select="concat('#cmd',@id)"/>" }
+    run: { import: "#make2cwl" }
 <xsl:text>
 
 </xsl:text>
 </xsl:template>
 
-
-
-<xsl:template match="target" mode="shell">
-<xsl:variable name="path"><xsl:value-of select="$base.dir"/>/proc<xsl:value-of select="@id"/>.sh</xsl:variable>
+<!--==== MAKE SHELL ===================================================== -->
+<xsl:template match="make" mode="shell">
+<xsl:variable name="path"><xsl:value-of select="$base.dir"/>/make2cwl.sh</xsl:variable>
 <xsl:document href="{$path}" method="text">#!<xsl:value-of select="/make/@shell"/>
+function die () {
+    echo 1&gt;&amp;2 "ERROR: $0 : $@"
+    exit 1
+}
+if [ "$#" -ne 1 ]; then
+    die "Illegal number of parameters"
+fi
+
 oldpwd=${PWD}
 
-set -e
-set -u
+
+<xsl:apply-templates select="target" mode="shell"/>
+
+
+case "$1" in<xsl:for-each select="target"><xls:text>
+	</xsl:text><xsl:value-of select="@id"/>)
+    run<xsl:value-of select="@id"/>
+    ;;</xsl:for-each>
+	*)
+	die "Undefined target id=$1"
+	;;
+esac
+
+</xsl:template>
+
+<!--==== TARGET SHELL ===================================================== -->
+
+<xsl:template match="target" mode="shell">
 
 
 function run<xsl:value-of select="@id"/>() {<xsl:if test="/make/@pwd">
@@ -107,7 +115,7 @@ function run<xsl:value-of select="@id"/>() {<xsl:if test="/make/@pwd">
 	</xsl:if>
 	<xsl:for-each select="prerequisites/prerequisite">
 	if [ ! -f "<xsl:value-of select="@name"/>" ] then;
-		echo "File <xsl:value-of select="@name"/> : missing" 1&gt;&amp;2 &amp;&amp; exit 1
+		die "File <xsl:value-of select="@name"/> missing"
 	fi; 
 	</xsl:for-each>
 	
@@ -115,12 +123,13 @@ function run<xsl:value-of select="@id"/>() {<xsl:if test="/make/@pwd">
 		</xsl:text>
 	<xsl:value-of select="text()"/>
 	</xsl:for-each>
+	
+	cd "${oldpwd}" &amp;&amp; touch make2cwl.ok
 	}
 
-run<xsl:value-of select="@id"/> &amp;&amp; cd "${oldpwd}" &amp;&amp; touch <xsl:value-of select="concat(@id,'.ok.flag')"/>
-
-</xsl:document>
 </xsl:template>
+
+<!--==== TARGET SHELL ===================================================== -->
 
 <xsl:template match="target" mode="phony-name">
 <xsl:text>"</xsl:text>
