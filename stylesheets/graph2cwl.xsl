@@ -41,6 +41,7 @@
 
 <xsl:text>
 </xsl:text>
+<xsl:apply-templates select="." mode="shell"/> 
 </xsl:template>   
 
 <!--==== TOOL ===================================================== -->
@@ -63,7 +64,7 @@
     - id:  "#output"
       type: File
       outputBinding:
-          glob: "<xsl:apply-templates select="." mode="flag"/>"
+          glob: "ok<xsl:value-of select="@id"/>.txt"
   baseCommand: "<xsl:value-of select="$shellpath"/>"
   arguments:
      - "<xsl:value-of select="@id"/>"
@@ -76,7 +77,7 @@
 <xsl:variable name="this" select="."/>
   - id: "#step<xsl:value-of select="@id"/>"
     inputs:
-      - { id: "#tool<xsl:value-of select="$this/@id"/>.target", default : "<xsl:apply-templates select="." mode="flag"/>" }<xsl:for-each select="prerequisites/prerequisite">
+      - { id: "#tool<xsl:value-of select="$this/@id"/>.target", default : <xsl:apply-templates select="." mode="flag"/> }<xsl:for-each select="prerequisites/prerequisite">
       - { id: "#tool<xsl:value-of select="$this/@id"/>.dep<xsl:value-of select="@ref"/>" , source: "#step<xsl:value-of select="@ref"/>.output"}</xsl:for-each>
     outputs:
       - { id: "#step<xsl:value-of select="$this/@id"/>.output" }
@@ -85,7 +86,7 @@
 
 <!--==== MAKE SHELL ===================================================== -->
 <xsl:template match="make" mode="shell">
-<xsl:document href="{$shellpath}" method="text">#!<xsl:value-of select="/make/@shell"/>
+<xsl:document href="{$shellpath}" method="text">#!/bin/bash
 function die () {
     echo 1&gt;&amp;2 "ERROR: $0 : $@"
     exit 1
@@ -95,7 +96,6 @@ if [ "$#" -ne 1 ]; then
 fi
 
 oldpwd=${PWD}
-
 
 <xsl:apply-templates select="target" mode="shell"/>
 
@@ -120,18 +120,20 @@ esac
 function run<xsl:value-of select="@id"/>() {<xsl:if test="/make/@pwd">
 	cd '<xsl:value-of select="/make/@pwd"/>'
 	</xsl:if>
-	<xsl:for-each select="prerequisites/prerequisite">
-	if [ ! -f "<xsl:value-of select="@name"/>" ] then;
+	<xsl:for-each select="prerequisites/prerequisite"><xsl:if test="key('tt',@ref)/@phony = 0">
+	if [ ! -f "<xsl:value-of select="@name"/>" ]; then
 		die "File <xsl:value-of select="@name"/> missing"
-	fi; 
-	</xsl:for-each>
+	fi
+	</xsl:if></xsl:for-each>
 	
 	<xsl:for-each select="statements/statement"><xsl:text>
 		</xsl:text>
 	<xsl:value-of select="text()"/>
 	</xsl:for-each>
 	
-	cd "${oldpwd}" &amp;&amp; touch <xsl:apply-templates select="." mode="flag"/>"
+	##touch <xsl:if test="@phony = 0"> -c </xsl:if> <xsl:apply-templates select="." mode="phony-name"/>"
+	cd "${oldpwd}"
+	touch "ok<xsl:value-of select="@id"/>.txt"
 	}
 
 </xsl:template>
