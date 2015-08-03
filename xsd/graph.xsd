@@ -35,6 +35,7 @@
 		             
               </xs:sequence>
               <xs:attribute name="name" type="xs:normalizedString" use="required"/>
+              <xs:attribute name="absolute-path" type="xs:normalizedString" />
               <xs:attribute name="description" type="xs:string"/>
               <xs:attribute name="id" type="xs:int" use="required"/>
               <xs:attribute name="precious" type="xs:int"/>
