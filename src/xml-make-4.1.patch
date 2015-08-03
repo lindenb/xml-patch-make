@@ -1,5 +1,5 @@
---- make-4.1/original/remake.c	2015-07-29 11:32:27.222684965 +0200
-+++ make-4.1/make-4.1/remake.c	2015-07-29 11:32:39.382745257 +0200
+--- make-4.1/original/remake.c	2015-08-03 11:36:08.868053944 +0200
++++ make-4.1/make-4.1/remake.c	2015-08-03 11:36:23.684127407 +0200
 @@ -1198,11 +1198,13 @@
     do whatever is appropriate to remake FILE itself.
     Return the status from executing FILE's commands.  */
@@ -14,8 +14,8 @@
        if (file->phony)
          /* Phony target.  Pretend it succeeded.  */
          file->update_status = us_success;
---- make-4.1/original/function.c	2015-07-29 11:32:27.218684940 +0200
-+++ make-4.1/make-4.1/function.c	2015-07-29 11:32:39.382745257 +0200
+--- make-4.1/original/function.c	2015-08-03 11:36:08.864053921 +0200
++++ make-4.1/make-4.1/function.c	2015-08-03 11:36:23.684127407 +0200
 @@ -14,19 +14,14 @@
  You should have received a copy of the GNU General Public License along with
  this program.  If not, see <http://www.gnu.org/licenses/>.  */
@@ -99,8 +99,8 @@
    FT_ENTRY ("if",            2,  3,  0,  func_if),
    FT_ENTRY ("or",            1,  0,  0,  func_or),
    FT_ENTRY ("and",           1,  0,  0,  func_and),
---- make-4.1/original/job.c	2015-07-29 11:32:27.218684940 +0200
-+++ make-4.1/make-4.1/job.c	2015-07-29 11:32:39.386745282 +0200
+--- make-4.1/original/job.c	2015-08-03 11:36:08.864053921 +0200
++++ make-4.1/make-4.1/job.c	2015-08-03 11:36:23.684127407 +0200
 @@ -17,15 +17,10 @@
  #include "makeint.h"
  
@@ -128,8 +128,8 @@
    /* Start the first command; reap_children will run later command lines.  */
    start_job_command (c);
  
---- make-4.1/original/main.c	2015-07-29 11:32:27.218684940 +0200
-+++ make-4.1/make-4.1/main.c	2015-07-29 11:32:39.386745282 +0200
+--- make-4.1/original/main.c	2015-08-03 11:36:08.864053921 +0200
++++ make-4.1/make-4.1/main.c	2015-08-03 11:36:23.684127407 +0200
 @@ -24,6 +24,7 @@
  #include "debug.h"
  #include "getopt.h"
@@ -216,8 +216,8 @@
      /* Exit.  */
      die (makefile_status);
    }
---- make-4.1/original/Makefile.am	2015-07-29 11:32:27.234685024 +0200
-+++ make-4.1/make-4.1/Makefile.am	2015-07-29 11:32:39.386745282 +0200
+--- make-4.1/original/Makefile.am	2015-08-03 11:36:08.880054004 +0200
++++ make-4.1/make-4.1/Makefile.am	2015-08-03 11:36:23.684127407 +0200
 @@ -43,6 +43,7 @@
  		function.c getopt.c getopt1.c guile.c implicit.c job.c load.c \
  		loadapi.c main.c misc.c output.c read.c remake.c rule.c \
@@ -227,8 +227,9 @@
  
  EXTRA_make_SOURCES = vmsjobs.c remote-stub.c remote-cstms.c
 --- make-4.1/original/xml.c	1970-01-01 01:00:00.000000000 +0100
-+++ make-4.1/make-4.1/xml.c	2015-07-30 10:33:51.307846459 +0200
-@@ -0,0 +1,414 @@
++++ make-4.1/make-4.1/xml.c	2015-08-03 11:45:09.186733236 +0200
+@@ -0,0 +1,453 @@
++#include <limits.h>
 +#include "config.h"
 +#include "xml.h"
 +
@@ -405,6 +406,8 @@
 +static void RecursiveNodePrint(FILE* out,NodePtr node)
 +	{
 +	size_t i=0;
++
++	
 +	NodeMetadataPtr meta =  xml_find_metadata(node->name,0);
 +	
 +	if(node->printed !=0) return;
@@ -423,7 +426,22 @@
 +		fputs(" name=\"",out);
 +		escape_xml_str(out,node->name);
 +		fputc('"',out);
-+	
++		
++#ifdef HAVE_REALPATH
++	if(! node->phony )
++		{
++		char* fullpath = NULL;
++		char actualpath [PATH_MAX+1];
++		fullpath = realpath(node->name, actualpath);
++		if(fullpath!=NULL)
++			{
++			fputs(" absolute-path=\"",out);
++			escape_xml_str(out,fullpath);
++			fputc('"',out);
++			}
++		}
++#endif
++
 +	fputs(" description=\"",out);
 +	if(meta != NULL && meta->desc!=NULL)
 +		{
@@ -560,6 +578,28 @@
 +		}
 +	}
 +
++static char* remove_trailing_slash(char* s)
++	{
++	int i=0,j=0;
++	if(s==NULL) return NULL;
++	while(s[i]!=0)
++		{
++		if(s[i]=='\\' && s[i+1]=='\n')
++			{
++			s[j]=' ';
++			i++;
++			}
++		else
++			{
++			s[j]=s[i];
++			}
++		++i;
++		++j;
++		}
++	s[j]=0;
++	return s;
++	}
++
 +void xml_visit(struct child* child)
 +	{
 +	int i=0;
@@ -577,8 +617,7 @@
 +			);
 +		
 +		if( childptr->statements == NULL) EXIT_WITH_ERROR;
-+		childptr->statements[childptr->n_statements]= strdup(child->command_lines[i]);
-+		if( childptr->statements[childptr->n_statements] == NULL)  exit(EXIT_FAILURE);
++		childptr->statements[childptr->n_statements]= remove_trailing_slash(xstrdup(child->command_lines[i]));
 +		childptr->n_statements++;
 +		}
 +	}
@@ -644,7 +683,7 @@
 +
 +
 --- make-4.1/original/xml.h	1970-01-01 01:00:00.000000000 +0100
-+++ make-4.1/make-4.1/xml.h	2015-07-29 11:32:39.386745282 +0200
++++ make-4.1/make-4.1/xml.h	2015-08-03 11:36:23.684127407 +0200
 @@ -0,0 +1,26 @@
 +#ifndef LOG_H
 +#define LOG_H
@@ -672,8 +711,8 @@
 +NodeMetadataPtr xml_find_metadata(const char* name,int create_if_missing);
 +
 +#endif
---- make-4.1/original/file.c	2015-07-29 11:32:27.222684965 +0200
-+++ make-4.1/make-4.1/file.c	2015-07-29 11:32:39.386745282 +0200
+--- make-4.1/original/file.c	2015-08-03 11:36:08.868053944 +0200
++++ make-4.1/make-4.1/file.c	2015-08-03 11:36:23.684127407 +0200
 @@ -139,6 +139,9 @@
    return f;
  }
