@@ -20,7 +20,7 @@
 
 
 <xsl:text>#!/usr/bin/env cwl-runner
-cwlVersion: draft-2
+cwlVersion: v1.0
 $graph:
 </xsl:text>
 
@@ -34,7 +34,7 @@ $graph:
   outputs:
     - id: "#outfile"
       type: File
-      source: "#step<xsl:value-of select="$top/@id"/>.output"
+      outputSource: "#step<xsl:value-of select="$top/@id"/>.output"
   steps:
 <xsl:for-each select="target">
     <xsl:sort select="position()" data-type="number"/>
@@ -53,13 +53,13 @@ $graph:
 - id: "#tool<xsl:value-of select="@id"/>"
   class: CommandLineTool
   label: "<xsl:value-of select="@name"/>"
-  description: "<xsl:value-of select="@description"/>"
+  doc: "<xsl:value-of select="@description"/>"
   inputs:
     - id: "#clt<xsl:value-of select="@id"/>.target"
       label: "<xsl:value-of select="@name"/>"
-      description: "<xsl:value-of select="@description"/>"
+      doc: "<xsl:value-of select="@description"/>"
       type: string<xsl:for-each select="prerequisites/prerequisite">
-    - id : "#clt<xsl:value-of select="$this/@id"/>dep<xsl:value-of select="@ref"/>"
+    - id : "#clt<xsl:value-of select="$this/@id"/>.dep<xsl:value-of select="@ref"/>"
       label: "<xsl:value-of select="@name"/>"
       type: File</xsl:for-each>
   outputs:
@@ -78,12 +78,12 @@ $graph:
 <xsl:template match="target" mode="step">
 <xsl:variable name="this" select="."/>
   - id: "#step<xsl:value-of select="@id"/>"
-    inputs:
+    in:
       - { id: "#tool<xsl:value-of select="$this/@id"/>.target", default : <xsl:apply-templates select="." mode="flag"/> }<xsl:for-each select="prerequisites/prerequisite">
       - { id: "#tool<xsl:value-of select="$this/@id"/>.dep<xsl:value-of select="@ref"/>" , source: "#step<xsl:value-of select="@ref"/>.output"}</xsl:for-each>
-    outputs:
+    out:
       - { id: "#step<xsl:value-of select="$this/@id"/>.output" }
-    run: { import: "#tool<xsl:value-of select="@id"/>" }
+    run: "#tool<xsl:value-of select="@id"/>"
 </xsl:template>
 
 <!--==== MAKE SHELL ===================================================== -->
