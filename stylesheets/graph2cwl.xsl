@@ -20,6 +20,8 @@
 
 
 <xsl:text>#!/usr/bin/env cwl-runner
+cwlVersion: draft-2
+$graph:
 </xsl:text>
 
 
