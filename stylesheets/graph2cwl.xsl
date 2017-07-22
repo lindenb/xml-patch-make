@@ -28,17 +28,17 @@ $graph:
 <xsl:apply-templates select="target" mode="tool"/>
 
 
-- id: "#main"
+- id: main
   class: Workflow
   inputs: []
   outputs:
-    - id: "#outfile"
+    outfile:
       type: File
-      outputSource: "#step<xsl:value-of select="$top/@id"/>.output"
+      outputSource: step<xsl:value-of select="$top/@id"/>/output
   steps:
 <xsl:for-each select="target">
     <xsl:sort select="position()" data-type="number"/>
-	<xsl:apply-templates select="." mode="step"/>
+        <xsl:apply-templates select="." mode="step"/>
 </xsl:for-each>
 
 <xsl:text>
@@ -50,20 +50,20 @@ $graph:
 <xsl:template match="target" mode="tool">
 <xsl:variable name="this" select="."/>
 
-- id: "#tool<xsl:value-of select="@id"/>"
+- id: tool<xsl:value-of select="@id"/>
   class: CommandLineTool
   label: "<xsl:value-of select="@name"/>"
   doc: "<xsl:value-of select="@description"/>"
   inputs:
-    - id: "#clt<xsl:value-of select="@id"/>.target"
+    <xsl:value-of select="@id"/>_target:
       label: "<xsl:value-of select="@name"/>"
       doc: "<xsl:value-of select="@description"/>"
       type: string<xsl:for-each select="prerequisites/prerequisite">
-    - id : "#clt<xsl:value-of select="$this/@id"/>.dep<xsl:value-of select="@ref"/>"
+    <xsl:value-of select="$this/@id"/>_dep<xsl:value-of select="@ref"/>
       label: "<xsl:value-of select="@name"/>"
       type: File</xsl:for-each>
   outputs:
-    - id:  "#clt<xsl:value-of select="@id"/>.output"
+    output:
       type: File
       outputBinding:
           glob: "ok<xsl:value-of select="@id"/>.txt"
@@ -77,13 +77,15 @@ $graph:
 <!--==== TARGET STEP ===================================================== -->
 <xsl:template match="target" mode="step">
 <xsl:variable name="this" select="."/>
-  - id: "#step<xsl:value-of select="@id"/>"
-    in:
-      - { id: "#tool<xsl:value-of select="$this/@id"/>.target", default : <xsl:apply-templates select="." mode="flag"/> }<xsl:for-each select="prerequisites/prerequisite">
-      - { id: "#tool<xsl:value-of select="$this/@id"/>.dep<xsl:value-of select="@ref"/>" , source: "#step<xsl:value-of select="@ref"/>.output"}</xsl:for-each>
-    out:
-      - { id: "#step<xsl:value-of select="$this/@id"/>.output" }
-    run: "#tool<xsl:value-of select="@id"/>"
+    step<xsl:value-of select="@id"/>:
+      in:
+        <xsl:value-of select="$this/@id"/>_target:
+          default: <xsl:apply-templates select="." mode="flag"/>
+      <xsl:for-each select="prerequisites/prerequisite"><xsl:text>&#xa;</xsl:text>
+      <xsl:text>        </xsl:text><xsl:value-of select="$this/@id"/>_dep<xsl:value-of select="@ref"/>:
+          source: step<xsl:value-of select="@ref"/>/output</xsl:for-each>
+      out: [ output ]
+      run: "#tool<xsl:value-of select="@id"/>"
 </xsl:template>
 
 <!--==== MAKE SHELL ===================================================== -->
@@ -103,7 +105,7 @@ oldpwd=${PWD}
 
 
 case "$1" in<xsl:for-each select="target"><xsl:text>
-	</xsl:text><xsl:value-of select="@id"/>)
+        </xsl:text><xsl:value-of select="@id"/>)
     run<xsl:value-of select="@id"/>
     ;;</xsl:for-each>
 	*)
