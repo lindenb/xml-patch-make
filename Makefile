@@ -5,14 +5,18 @@ xmake.exe=make-$(make.version)/bin/xml-make$(make.version)
 
 .PHONY: all clean download-make test _patch test-nextflow
 
-${xmake.exe} : src/xml-make-$(make.version).patch
+all: ${xmake.exe}
+
+make-$(make.version).tar.gz:
+	wget -O $@ "http://ftp.gnu.org/gnu/make/make-$(make.version).tar.gz" || \
+		curl -o $@ "http://ftp.gnu.org/gnu/make/make-$(make.version).tar.gz"
+
+${xmake.exe}: src/xml-make-$(make.version).patch make-$(make.version).tar.gz
 	rm -rf make-$(make.version)
 	mkdir -p make-$(make.version)
-	wget -O make-$(make.version).tar.gz "http://ftp.gnu.org/gnu/make/make-$(make.version).tar.gz"
 	tar xvfz make-$(make.version).tar.gz -C make-$(make.version)
 	cp $< make-$(make.version)/make-$(make.version)/
 	cp -r make-$(make.version)/make-$(make.version) make-$(make.version)/original
-	rm make-$(make.version).tar.gz
 	(cd make-$(make.version)/make-$(make.version) &&  autoreconf && automake && ./configure --prefix=$${PWD}/..  --program-prefix=xml- --program-suffix=$(make.version) && patch   --input=$(notdir $<) --batch && make install)
 
 test: ${xmake.exe} 
