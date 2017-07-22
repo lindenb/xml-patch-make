@@ -20,6 +20,8 @@
 
 
 <xsl:text>#!/usr/bin/env cwl-runner
+cwlVersion: draft-2
+$graph:
 </xsl:text>
 
 
@@ -53,15 +55,15 @@
   label: "<xsl:value-of select="@name"/>"
   description: "<xsl:value-of select="@description"/>"
   inputs:
-    - id: "#target"
+    - id: "#clt<xsl:value-of select="@id"/>.target"
       label: "<xsl:value-of select="@name"/>"
       description: "<xsl:value-of select="@description"/>"
       type: string<xsl:for-each select="prerequisites/prerequisite">
-    - id : "#dep<xsl:value-of select="@ref"/>"
+    - id : "#clt<xsl:value-of select="$this/@id"/>dep<xsl:value-of select="@ref"/>"
       label: "<xsl:value-of select="@name"/>"
       type: File</xsl:for-each>
   outputs:
-    - id:  "#output"
+    - id:  "#clt<xsl:value-of select="@id"/>.output"
       type: File
       outputBinding:
           glob: "ok<xsl:value-of select="@id"/>.txt"
