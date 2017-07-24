@@ -6,7 +6,7 @@
 	>
 <!-- convert a xml-make to CWL https://github.com/common-workflow-language -->
 <xsl:output method="text"/>
-<xsl:param name="shellpath">~/src/xml-patch-make/tmp/graph2cwl.bash</xsl:param>
+<xsl:param name="shellpath">graph2cwl.bash</xsl:param>
 <xsl:key name="tt" match="target" use="@id" />
 
 <!-- pour memoire  : /home/lindenb/.local/bin/cwl-runner -->
