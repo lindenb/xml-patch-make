@@ -58,8 +58,8 @@ $graph:
     <xsl:value-of select="@id"/>_target:
       label: "<xsl:value-of select="@name"/>"
       doc: "<xsl:value-of select="@description"/>"
-      type: string<xsl:for-each select="prerequisites/prerequisite">
-    <xsl:value-of select="$this/@id"/>_dep<xsl:value-of select="@ref"/>
+      type: string<xsl:for-each select="prerequisites/prerequisite"><xsl:text>&#xa;</xsl:text>
+    <xsl:text>    </xsl:text><xsl:value-of select="$this/@id"/>_dep<xsl:value-of select="@ref"/>:
       label: "<xsl:value-of select="@name"/>"
       type: File</xsl:for-each>
   outputs:
@@ -67,9 +67,7 @@ $graph:
       type: File
       outputBinding:
           glob: "ok<xsl:value-of select="@id"/>.txt"
-  baseCommand: "<xsl:value-of select="$shellpath"/>"
-  arguments:
-     - "<xsl:value-of select="@id"/>"
+  baseCommand: [ <xsl:value-of select="$shellpath"/>, "<xsl:value-of select="@id"/>" ]
 
 </xsl:template>
 
@@ -79,11 +77,8 @@ $graph:
 <xsl:variable name="this" select="."/>
     step<xsl:value-of select="@id"/>:
       in:
-        <xsl:value-of select="$this/@id"/>_target:
-          default: <xsl:apply-templates select="." mode="flag"/>
-      <xsl:for-each select="prerequisites/prerequisite"><xsl:text>&#xa;</xsl:text>
-      <xsl:text>        </xsl:text><xsl:value-of select="$this/@id"/>_dep<xsl:value-of select="@ref"/>:
-          source: step<xsl:value-of select="@ref"/>/output</xsl:for-each>
+        <xsl:value-of select="$this/@id"/>_target: { default: <xsl:apply-templates select="." mode="flag"/> }<xsl:for-each select="prerequisites/prerequisite"><xsl:text>&#xa;</xsl:text>
+      <xsl:text>        </xsl:text><xsl:value-of select="$this/@id"/>_dep<xsl:value-of select="@ref"/>: step<xsl:value-of select="@ref"/>/output</xsl:for-each>
       out: [ output ]
       run: "#tool<xsl:value-of select="@id"/>"
 </xsl:template>
