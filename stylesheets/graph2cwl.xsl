@@ -6,7 +6,7 @@
 	>
 <!-- convert a xml-make to CWL https://github.com/common-workflow-language -->
 <xsl:output method="text"/>
-<xsl:param name="shellpath">graph2cwl.bash</xsl:param>
+<xsl:param name="shell">bash</xsl:param>
 <xsl:key name="tt" match="target" use="@id" />
 
 <!-- pour memoire  : /home/lindenb/.local/bin/cwl-runner -->
@@ -43,8 +43,7 @@ $graph:
 
 <xsl:text>
 </xsl:text>
-<xsl:apply-templates select="." mode="shell"/> 
-</xsl:template>   
+</xsl:template>
 
 <!--==== TOOL ===================================================== -->
 <xsl:template match="target" mode="tool">
@@ -67,10 +66,17 @@ $graph:
       type: File
       outputBinding:
           glob: "ok<xsl:value-of select="@id"/>.txt"
-  baseCommand: [ <xsl:value-of select="$shellpath"/>, "<xsl:value-of select="@id"/>" ]
-
+  baseCommand:
+    - <xsl:value-of select="$shell"/>
+    - -eu
+    - -o
+    - pipefail
+    - -c
+    - <xsl:if test="statements">&gt;
+        (cd '<xsl:value-of select="/make/@pwd"/>';
+        <xsl:for-each select="statements/statement"><xsl:value-of select="text()"/>;
+        </xsl:for-each>); </xsl:if>touch ok<xsl:value-of select="@id"/>.txt
 </xsl:template>
-
 
 <!--==== TARGET STEP ===================================================== -->
 <xsl:template match="target" mode="step">
@@ -82,62 +88,6 @@ $graph:
       out: [ output ]
       run: "#tool<xsl:value-of select="@id"/>"
 </xsl:template>
-
-<!--==== MAKE SHELL ===================================================== -->
-<xsl:template match="make" mode="shell">
-<xsl:document href="{$shellpath}" method="text">#!/bin/bash
-function die () {
-    echo 1&gt;&amp;2 "ERROR: $0 : $@"
-    exit 1
-}
-if [ "$#" -ne 1 ]; then
-    die "Illegal number of parameters"
-fi
-
-oldpwd=${PWD}
-
-<xsl:apply-templates select="target" mode="shell"/>
-
-
-case "$1" in<xsl:for-each select="target"><xsl:text>
-        </xsl:text><xsl:value-of select="@id"/>)
-    run<xsl:value-of select="@id"/>
-    ;;</xsl:for-each>
-	*)
-	die "Undefined target id=$1"
-	;;
-esac
-
-</xsl:document>
-</xsl:template>
-
-<!--==== TARGET SHELL ===================================================== -->
-
-<xsl:template match="target" mode="shell">
-
-
-function run<xsl:value-of select="@id"/>() {<xsl:if test="/make/@pwd">
-	cd '<xsl:value-of select="/make/@pwd"/>'
-	</xsl:if>
-	<xsl:for-each select="prerequisites/prerequisite"><xsl:if test="key('tt',@ref)/@phony = 0">
-	if [ ! -f "<xsl:value-of select="@name"/>" ]; then
-		die "File <xsl:value-of select="@name"/> missing"
-	fi
-	</xsl:if></xsl:for-each>
-	
-	<xsl:for-each select="statements/statement"><xsl:text>
-		</xsl:text>
-	<xsl:value-of select="text()"/>
-	</xsl:for-each>
-	
-	##touch <xsl:if test="@phony = 0"> -c </xsl:if> <xsl:apply-templates select="." mode="phony-name"/>"
-	cd "${oldpwd}"
-	touch "ok<xsl:value-of select="@id"/>.txt"
-	}
-
-</xsl:template>
-
-<!--==== TARGET SHELL ===================================================== -->
 
 <xsl:template match="target" mode="phony-name">
 <xsl:text>"</xsl:text>
